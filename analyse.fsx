@@ -3,7 +3,7 @@
 open System
 open FSharp.Data
 
-printfn ("Analyzing")
+printfn ("Starting analyze...")
 
 [<Literal>]
 let Sample = __SOURCE_DIRECTORY__ + "/sample.csv"
@@ -27,14 +27,14 @@ let rec insert (root: Node) item (cs: string list) =
     | [] -> { root with items = root.items @ [ item ] }
     | c :: cs' ->
         if List.exists (fun x -> x.category = c) root.children then
-            { root with
-                children =
-                    root.children
-                    |> List.map (fun n ->
-                        if n.category = c then
-                            insert n item cs'
-                        else
-                            n) }
+            let insertIfCategory =
+                (fun n ->
+                    if n.category = c then
+                        insert n item cs'
+                    else
+                        n)
+
+            { root with children = root.children |> List.map insertIfCategory }
         else
             let newNode =
                 { category = c
@@ -44,7 +44,6 @@ let rec insert (root: Node) item (cs: string list) =
             { root with children = root.children @ [ insert newNode item cs' ] }
 
 let insertRow (root: Node) (item: Transaction.Row) =
-    // printfn $"{root}\nCategories: {item.Category}\n"
     insert root item
     <| (List.ofArray <| item.Category.Split '/')
 
@@ -57,6 +56,10 @@ let performd f node =
 
 let rec perform f node = performd (fun _ x -> f x) node
 
+let printIndented f tree =
+    tree.children
+    |> Seq.iter (performd (fun d n -> printfn $"{new string ('\t', d)}{f n}"))
+
 let root =
     { category = ""
       children = []
@@ -64,11 +67,23 @@ let root =
 
 let tree = data.Rows |> Seq.fold insertRow root
 
-performd (fun d n -> printfn $"{new string ('\t', d)}{n.category}") tree
+let getValue (row: Transaction.Row) =
 
+    let mutable result = 0.0
 
-// for r in data.Rows do
-//     let date = r.Category
-//     printfn $"{date}"
-// let date = r..GetColumn "Transaction Date"
-// printfn $"{date}"
+    if Double.TryParse(row.``Debit Amount``, &result) then
+        -result
+    elif Double.TryParse(row.``Credit Amount``, &result) then
+        result
+    else
+        0
+
+let rec summerize node : float =
+    node.children
+    |> Seq.map summerize
+    |> Seq.append (node.items |> Seq.map getValue)
+    |> Seq.sum
+
+// printIndented (fun n -> n.category) tree
+
+printIndented (fun n -> $"{n.category}: {summerize n}") tree
