@@ -100,11 +100,13 @@ open Argu
 
 type Arguments =
     | [<MainCommand; Mandatory>] Filename of path: string
+    | Depth of depth: int
 
     interface IArgParserTemplate with
         member s.Usage =
             match s with
             | Filename _ -> "Filename of csv file to analyze"
+            | Depth _ -> "Depth of categories to output"
 
 let parser =
     ArgumentParser.Create<Arguments>(programName = "Finance analyzer")
@@ -132,14 +134,22 @@ let rec summerize node : float =
     |> Seq.append (node.items |> Seq.map getValue)
     |> Seq.sum
 
+let printDepth = args.TryGetResult Depth
+
 let output d n =
-    let indent = 4
+    let helper () =
+        let indent = 4
 
-    let amount = summerize n
+        let amount = summerize n
 
-    printf $"{spaces <| indent * d}{n.category |> padr 20}"
-    printColor (numColor amount) (amount |> sprintf "%.2f" |> padl 20)
-    printfn ""
+        printf $"{spaces <| indent * d}{n.category |> padr 20}"
+        printColor (numColor amount) (amount |> sprintf "%.2f" |> padl 20)
+        printfn ""
+
+    match printDepth with
+    | None -> helper ()
+    | Some maxDepth when maxDepth >= d -> helper ()
+    | _ -> ()
 
 tree.children |> Seq.iter (performd output)
 
