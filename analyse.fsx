@@ -9,6 +9,18 @@ module StringHelpers =
 
     let spaces n = new string (' ', n)
 
+    let numColor n =
+        if n > 0.0 then
+            ConsoleColor.Green
+        else
+            ConsoleColor.Red
+
+
+    let printColor color msg =
+        Console.ForegroundColor <- color
+        printf $"{msg}"
+        Console.ForegroundColor <- ConsoleColor.White
+
 module TransactionTree =
     open FSharp.Data
 
@@ -107,6 +119,10 @@ if args.IsUsageRequested then
 let filename =
     System.IO.Path.Join(__SOURCE_DIRECTORY__, args.GetResult Filename)
 
+if IO.File.Exists filename |> not then
+    printColor ConsoleColor.Red $"Unable to find file: '{args.GetResult Filename}'"
+    exit 1
+
 let data = Transaction.Load(filename)
 let tree = buildTree data.Rows
 
@@ -117,13 +133,16 @@ let rec summerize node : float =
     |> Seq.sum
 
 let output d n =
-    let indent = 2
+    let indent = 4
 
-    let amount =
-        summerize n
-        |> sprintf "%.2f"
-        |> padl (20 - indent * d)
+    let amount = summerize n
 
-    printfn $"{spaces <| indent * d}{n.category |> padr 20} {amount}"
+    printf $"{spaces <| indent * d}{n.category |> padr 20}"
+    printColor (numColor amount) (amount |> sprintf "%.2f" |> padl 20)
+    printfn ""
 
 tree.children |> Seq.iter (performd output)
+
+let total = summerize tree
+
+printColor (numColor total) (sprintf "\nTotal: %.2f\n" total)
