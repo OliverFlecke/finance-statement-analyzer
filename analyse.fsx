@@ -1,4 +1,5 @@
 #r "nuget: FSharp.Data"
+#r "nuget: Argu"
 
 open System
 
@@ -83,13 +84,28 @@ module TransactionTree =
 
 open StringHelpers
 open TransactionTree
+open Argu
 
-printfn ("Starting analyze...")
+type Arguments =
+    | [<MainCommand; Mandatory>] Filename of path: string
 
-let args = Environment.GetCommandLineArgs()
+    interface IArgParserTemplate with
+        member s.Usage =
+            match s with
+            | Filename _ -> "Filename of csv file to analyze"
+
+let parser =
+    ArgumentParser.Create<Arguments>(programName = "Finance analyzer")
+
+let args =
+    parser.ParseCommandLine(raiseOnUsage = false)
+
+if args.IsUsageRequested then
+    printfn "%s" <| parser.PrintUsage()
+    exit 0
 
 let filename =
-    System.IO.Path.Join(__SOURCE_DIRECTORY__, args.[2])
+    System.IO.Path.Join(__SOURCE_DIRECTORY__, args.GetResult Filename)
 
 let data = Transaction.Load(filename)
 let tree = buildTree data.Rows
