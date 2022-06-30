@@ -111,12 +111,14 @@ open Argu
 type Arguments =
     | [<MainCommand; Mandatory>] Filename of path: string
     | Depth of depth: int
+    | PrintItems
 
     interface IArgParserTemplate with
         member s.Usage =
             match s with
             | Filename _ -> "Filename of csv file to analyze"
             | Depth _ -> "Depth of categories to output"
+            | PrintItems -> "Flag wether items should be outputed"
 
 let parser =
     ArgumentParser.Create<Arguments>(programName = "Finance analyzer")
@@ -147,14 +149,25 @@ let rec summerize node : float =
 let printDepth = args.TryGetResult Depth
 
 let output d n =
+    let indent = 4
+    let formatNumber = sprintf "%.2f" >> padl 20
+
+    let printItems n =
+        n.items
+        |> Seq.map (fun x -> (x.``Transaction Description``, getValue x))
+        |> Seq.iter (fun (description, value) ->
+            printfn $"{spaces (indent * (d + 1))}{description |> padr 20} {value |> formatNumber}")
+
     let helper () =
-        let indent = 4
 
         let amount = summerize n
 
         printf $"{spaces <| indent * d}{n.category |> padr 20}"
-        printColor (numColor amount) (amount |> sprintf "%.2f" |> padl 20)
+        printColor (numColor amount) (amount |> formatNumber)
         printfn ""
+
+        if args.TryGetResult PrintItems |> Option.isSome then
+            printItems n
 
     match printDepth with
     | None -> helper ()
@@ -162,7 +175,9 @@ let output d n =
     | _ -> ()
 
 let treePerformdWithSort comparer f tree =
-    tree.children |> Seq.sortBy comparer |> Seq.iter (performdWithSort comparer f)
+    tree.children
+    |> Seq.sortBy comparer
+    |> Seq.iter (performdWithSort comparer f)
 
 tree |> treePerformdWithSort summerize output
 
