@@ -84,6 +84,15 @@ let rec summerize node : float =
     |> Seq.append (node.items |> Seq.map getValue)
     |> Seq.sum
 
-// printIndented (fun n -> n.category) tree
+let padl amount (s: string) = s.PadLeft(amount)
+let padr amount (s: string) = s.PadRight(amount)
 
-printIndented (fun n -> $"{n.category}: {summerize n}") tree
+let spaces n = new string (' ', n)
+
+let output d n =
+    let amount =
+        summerize n |> sprintf "%.2f" |> padl (20 - 2 * d)
+
+    printfn $"{spaces <| 2 * d}{n.category |> padr 20} {amount}"
+
+tree.children |> Seq.iter (performd output)
