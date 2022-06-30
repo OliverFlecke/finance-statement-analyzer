@@ -112,13 +112,15 @@ type Arguments =
     | [<MainCommand; Mandatory>] Filename of path: string
     | Depth of depth: int
     | PrintItems
+    | SummerizeItems
 
     interface IArgParserTemplate with
         member s.Usage =
             match s with
             | Filename _ -> "Filename of csv file to analyze"
             | Depth _ -> "Depth of categories to output"
-            | PrintItems -> "Flag wether items should be outputed"
+            | PrintItems -> "Flag whether items should be outputed"
+            | SummerizeItems -> "Flag to indicate whether items should by summerized by their description"
 
 let parser =
     ArgumentParser.Create<Arguments>(programName = "Finance analyzer")
@@ -149,20 +151,28 @@ let rec summerize node : float =
 let printDepth = args.TryGetResult Depth
 
 let output d n =
+    let padding = 26
     let indent = 4
-    let formatNumber = sprintf "%.2f" >> padl 20
+    let formatNumber = sprintf "%.2f" >> padl padding
 
     let printItems n =
-        n.items
-        |> Seq.map (fun x -> (x.``Transaction Description``, getValue x))
-        |> Seq.iter (fun (description, value) ->
-            printfn $"{spaces (indent * (d + 1))}{description |> padr 20} {value |> formatNumber}")
+        let print (description, value) =
+            printfn $"{spaces (indent * (d + 1))}{description |> padr (padding - indent - 1)} {value |> formatNumber}"
+
+        let mapper =
+            match args.TryGetResult SummerizeItems with
+            | None -> Seq.map (fun (x: Transaction.Row) -> (x.``Transaction Description``, getValue x))
+            | Some _ ->
+                Seq.groupBy (fun x -> x.``Transaction Description``)
+                >> Seq.map (fun (d, rows) -> (d, rows |> Seq.sumBy getValue))
+
+        n.items |> mapper |> Seq.sortBy snd |> Seq.iter print
 
     let helper () =
 
         let amount = summerize n
 
-        printf $"{spaces <| indent * d}{n.category |> padr 20}"
+        printf $"{spaces <| indent * d}{n.category |> padr padding}"
         printColor (numColor amount) (amount |> formatNumber)
         printfn ""
 
