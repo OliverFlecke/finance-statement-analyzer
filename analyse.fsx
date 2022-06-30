@@ -75,6 +75,16 @@ module TransactionTree =
 
         helper 0 node
 
+    let performdWithSort comparer f node =
+        let rec helper d node =
+            f d node
+
+            node.children
+            |> Seq.sortBy comparer
+            |> Seq.iter (helper (d + 1))
+
+        helper 0 node
+
     let rec perform f node = performd (fun _ x -> f x) node
 
     let printIndented f tree =
@@ -151,7 +161,10 @@ let output d n =
     | Some maxDepth when maxDepth >= d -> helper ()
     | _ -> ()
 
-tree.children |> Seq.iter (performd output)
+let treePerformdWithSort comparer f tree =
+    tree.children |> Seq.sortBy comparer |> Seq.iter (performdWithSort comparer f)
+
+tree |> treePerformdWithSort summerize output
 
 let total = summerize tree
 
