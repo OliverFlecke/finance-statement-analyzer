@@ -29,25 +29,31 @@ module TransactionTree =
 
     let emptyNode = createNode ""
 
-    let rec insert (root: Node) item (cs: string list) =
+    let mapOrDefault p f d items =
+        let mutable found = false
+
+        let transform x =
+            if p x then
+                found <- true
+                f x
+            else
+                x
+
+        let items' = items |> List.map transform
+
+        if found then
+            items'
+        else
+            items @ [ f d ]
+
+    let rec insert item (cs: string list) (root: Node) =
         match cs with
         | [] -> { root with items = root.items @ [ item ] }
         | c :: cs' ->
-            if List.exists (fun x -> x.category = c) root.children then
-                let insertIfCategory =
-                    (fun n ->
-                        if n.category = c then
-                            insert n item cs'
-                        else
-                            n)
+            { root with children = mapOrDefault (fun n -> n.category = c) (insert item cs') (createNode c) root.children }
 
-                { root with children = root.children |> List.map insertIfCategory }
-            else
-                { root with children = root.children @ [ insert (createNode c) item cs' ] }
-
-    let insertRow (root: Node) (item: Transaction.Row) =
-        insert root item
-        <| (List.ofArray <| item.Category.Split '/')
+    let insertRow (node: Node) (item: Transaction.Row) =
+        insert item (List.ofArray <| item.Category.Split '/') node
 
     let performd f node =
         let rec helper d node =
