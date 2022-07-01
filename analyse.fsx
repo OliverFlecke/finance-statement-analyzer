@@ -191,6 +191,16 @@ let treePerformdWithSort comparer f tree =
 
 tree |> treePerformdWithSort summerize output
 
-let total = summerize tree
+let rec summerizeWithFilter filter node : float =
+    node.children
+    |> Seq.map (summerizeWithFilter filter)
+    |> Seq.append (node.items |> Seq.map getValue |> Seq.filter filter)
+    |> Seq.sum
 
-printColor (numColor total) (sprintf "\nTotal: %.2f\n" total)
+let total = summerize tree
+let debits = summerizeWithFilter ((>) 0) tree
+let credits = summerizeWithFilter ((<) 0) tree
+
+printColor (numColor debits) (sprintf "\nDebits:   %.2f\n" debits)
+printColor (numColor credits) (sprintf "Credits:   %.2f\n" credits)
+printColor (numColor total) (sprintf "Total:     %.2f\n" total)
