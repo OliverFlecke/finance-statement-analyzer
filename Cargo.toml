@@ -1,0 +1,12 @@
+[package]
+name = "finance-analyzer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { version = "1.0.147", features = ["derive"] }
+clap = { version = "4.0.18", features = ["derive"] }
+csv = { version = "1.1" }
+derive-getters = "0.2.0"
+serde_json = "1.0.87"
+colored = "2.0.0"
