@@ -7,7 +7,7 @@ use std::{
 
 use clap::Parser;
 use colored::Colorize;
-use finance_analyzer::Record;
+use finance_analyzer::{Record, Tree};
 
 #[derive(Debug, Parser)]
 struct Args {
@@ -16,7 +16,7 @@ struct Args {
     #[arg(short, long)]
     output: String,
     #[arg(short, long)]
-    lookup: String,
+    lookup: Option<String>,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -25,8 +25,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut reader = csv::Reader::from_path(args.filename)?;
     let mut writer = csv::Writer::from_path(args.output)?;
 
-    let mut lookup: HashMap<String, String> =
-        serde_json::from_reader(File::open(args.lookup.to_owned())?)?;
+    let mut lookup: HashMap<String, String> = get_initial_lookup(args.lookup.clone());
+
+    let tree = Tree::default();
 
     for result in reader.deserialize() {
         let mut record: Record = result?;
@@ -37,14 +38,32 @@ fn main() -> Result<(), Box<dyn Error>> {
             lookup.insert(record.description().to_owned(), category.to_owned());
         }
 
-        writer.serialize(record)?;
+        writer.serialize(record.clone())?;
+
+        // Tree
+        tree.insert(record);
     }
 
     writer.flush()?;
 
-    fs::write(args.lookup, serde_json::to_string_pretty(&lookup)?)?;
+    if let Some(lookup) = args.lookup {
+        fs::write(&lookup, serde_json::to_string_pretty(&lookup)?)?;
+    }
+
+    tree.preorder(|n, depth| {
+        println!("{:<1$}{category}", "", 4 * depth, category = n.borrow().catogory());
+    });
 
     Ok(())
+}
+
+/// Get the initial lookup `HashMap` stored in the given file.
+/// If the file does not exist or no filename is provided, an empty map is returned.
+fn get_initial_lookup(filename: Option<String>) -> HashMap<String, String> {
+    filename
+        .and_then(|f| File::open(f).ok())
+        .and_then(|file| serde_json::from_reader(file).ok())
+        .unwrap_or_default()
 }
 
 /// Get the catogory, either from the lookup or by asking the user.
