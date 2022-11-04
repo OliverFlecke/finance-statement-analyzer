@@ -74,6 +74,27 @@ impl Tree {
     }
 }
 
+impl IntoIterator for Tree {
+    type Item = Rc<RefCell<Node>>;
+    type IntoIter = std::vec::IntoIter<Rc<RefCell<Node>>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        fn append(node: Rc<RefCell<Node>>, v: &mut Vec<Rc<RefCell<Node>>>) {
+            v.push(node.clone());
+            node.borrow()
+                .children
+                .values()
+                .for_each(|n| append(n.clone(), v));
+        }
+
+        // Implemented by collecting all the nodes into a `Vec`, which is not optimal.
+        // It would be nice to implement `Iterator` directly to avoid this.
+        let mut result = Vec::new();
+        append(Rc::new(self.root), &mut result);
+        result.into_iter()
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct Node {
     category: String,
@@ -104,6 +125,10 @@ impl Node {
         });
     }
 
+    pub fn get_records(&self) -> impl Iterator<Item = &Record> {
+        self.items.iter()
+    }
+
     fn new(category: String) -> Self {
         Node {
             category,
@@ -128,11 +153,8 @@ impl Node {
             }
         }
 
-        if let Some(category) = record.category().clone() {
-            helper(root, record, category.split('/'));
-        } else {
-            root.borrow_mut().items.push(record);
-        }
+        let category = record.category().clone().unwrap_or(String::from(""));
+        helper(root, record, category.split('/'));
     }
 
     fn preorder<F>(root: &RefCell<Node>, action: F, depth: usize)
