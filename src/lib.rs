@@ -99,7 +99,7 @@ impl IntoIterator for Tree {
 pub struct Node {
     category: String,
     children: HashMap<String, Rc<RefCell<Node>>>,
-    items: Vec<Record>,
+    records: Vec<Record>,
 }
 
 impl Node {
@@ -112,7 +112,7 @@ impl Node {
             .values()
             .map(|c| c.borrow().total())
             .sum::<f64>()
-            + self.items.iter().map(|r| r.get_amount()).sum::<f64>()
+            + self.records.iter().map(|r| r.get_amount()).sum::<f64>()
     }
 
     pub fn for_each<F>(&self, f: F)
@@ -126,14 +126,14 @@ impl Node {
     }
 
     pub fn get_records(&self) -> impl Iterator<Item = &Record> {
-        self.items.iter()
+        self.records.iter()
     }
 
     fn new(category: String) -> Self {
         Node {
             category,
             children: HashMap::default(),
-            items: Vec::default(),
+            records: Vec::default(),
         }
     }
 
@@ -149,11 +149,14 @@ impl Node {
                 helper(child, record, splits);
             } else {
                 // Insert as child if this is leaf category
-                node.borrow_mut().items.push(record);
+                node.borrow_mut().records.push(record);
             }
         }
 
-        let category = record.category().clone().unwrap_or(String::from(""));
+        let category = record
+            .category()
+            .clone()
+            .unwrap_or_else(|| String::from(""));
         helper(root, record, category.split('/'));
     }
 
