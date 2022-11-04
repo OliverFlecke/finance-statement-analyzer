@@ -13,8 +13,6 @@ use finance_analyzer::{Record, Tree};
 struct Args {
     #[arg(short, long)]
     filename: String,
-    // #[arg(short, long)]
-    // output: String,
     #[arg(short, long, default_value = "lookup.json")]
     lookup: String,
     #[arg(short, long = "print-items")]
@@ -24,8 +22,10 @@ struct Args {
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
+    let tmp = args.filename.clone() + ".tmp";
+
     let mut reader = csv::Reader::from_path(&args.filename)?;
-    let mut writer = csv::Writer::from_writer(Vec::new());
+    let mut writer = csv::Writer::from_path(&tmp)?;
 
     let mut lookup: HashMap<String, String> = get_initial_lookup(&args.lookup);
 
@@ -47,9 +47,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     writer.flush()?;
+    fs::rename(&tmp, &args.filename)?;
 
+    // Save lookup dictionary
     fs::write(&args.lookup, serde_json::to_string_pretty(&lookup)?)?;
 
+    // Output trees
     tree.preorder_sort_by_key(
         |n, depth| {
             if depth == 0 {
