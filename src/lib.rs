@@ -1,8 +1,15 @@
-use std::{cell::RefCell, collections::HashMap, str::Split};
+use std::{
+    cell::{Ref, RefCell},
+    collections::HashMap,
+    rc::Rc,
+    str::Split,
+};
 
 use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
 
+/// A record matching the headers from `sample.csv`.
+/// Used to read and deserialize content from similar financial csv files.
 #[derive(Debug, Deserialize, Serialize, Getters, Clone)]
 pub struct Record {
     #[serde(rename = "Transaction Date")]
@@ -42,9 +49,13 @@ impl Tree {
         Node::insert(&self.root, record);
     }
 
+    pub fn get_root(&self) -> &RefCell<Node> {
+        &self.root
+    }
+
     pub fn preorder<F>(&self, action: F)
     where
-        F: Fn(&RefCell<Node>, usize) + Copy,
+        F: Fn(&Ref<Node>, usize) + Copy,
     {
         self.root
             .borrow()
@@ -53,19 +64,44 @@ impl Tree {
             .into_iter()
             .for_each(|n| Node::preorder(n, action, 0));
     }
+
+    pub fn preorder_sort_by_key<F, C>(&self, action: F, key: C)
+    where
+        F: Fn(&Ref<Node>, usize) + Copy,
+        C: Fn(&Ref<Node>) -> i64 + Copy,
+    {
+        Node::preorder_sort_by_key(&self.root, action, key, 0);
+    }
 }
 
 #[derive(Debug, Default)]
 pub struct Node {
     category: String,
-    // children: Vec<RefCell<Node>>,
-    children: HashMap<String, RefCell<Node>>,
+    children: HashMap<String, Rc<RefCell<Node>>>,
     items: Vec<Record>,
 }
 
 impl Node {
     pub fn catogory(&self) -> &String {
         &self.category
+    }
+
+    pub fn total(&self) -> f64 {
+        self.children
+            .values()
+            .map(|c| c.borrow().total())
+            .sum::<f64>()
+            + self.items.iter().map(|r| r.get_amount()).sum::<f64>()
+    }
+
+    pub fn for_each<F>(&self, f: F)
+    where
+        F: Fn(&Node) + Copy,
+    {
+        f(self);
+        self.children.values().for_each(|n| {
+            n.borrow().for_each(f);
+        });
     }
 
     fn new(category: String) -> Self {
@@ -83,7 +119,7 @@ impl Node {
                 let child = node
                     .children
                     .entry(cat.to_string())
-                    .or_insert_with(|| RefCell::new(Node::new(cat.to_string())));
+                    .or_insert_with(|| Rc::new(RefCell::new(Node::new(cat.to_string()))));
 
                 helper(child, record, splits);
             } else {
@@ -101,13 +137,32 @@ impl Node {
 
     fn preorder<F>(root: &RefCell<Node>, action: F, depth: usize)
     where
-        F: Fn(&RefCell<Node>, usize) + Copy,
+        F: Fn(&Ref<Node>, usize) + Copy,
     {
-        action(root, depth);
+        action(&root.borrow(), depth);
         root.borrow()
             .children
             .values()
             .into_iter()
             .for_each(|n| Self::preorder(n, action, depth + 1));
+    }
+
+    fn preorder_sort_by_key<F, C>(root: &RefCell<Node>, action: F, key: C, depth: usize)
+    where
+        F: Fn(&Ref<Node>, usize) + Copy,
+        C: Fn(&Ref<Node>) -> i64 + Copy,
+    {
+        action(&root.borrow(), depth);
+
+        let mut sorted_children = root
+            .borrow()
+            .children
+            .values()
+            .cloned()
+            .collect::<Vec<Rc<RefCell<Node>>>>();
+        sorted_children.sort_by_cached_key(|n| key(&n.as_ref().borrow()));
+        sorted_children
+            .iter()
+            .for_each(|n| Self::preorder_sort_by_key(n, action, key, depth + 1));
     }
 }

@@ -50,9 +50,25 @@ fn main() -> Result<(), Box<dyn Error>> {
         fs::write(&lookup, serde_json::to_string_pretty(&lookup)?)?;
     }
 
-    tree.preorder(|n, depth| {
-        println!("{:<1$}{category}", "", 4 * depth, category = n.borrow().catogory());
-    });
+    tree.preorder_sort_by_key(
+        |n, depth| {
+            if depth == 0 {
+                return;
+            }
+            println!(
+                // Alignment formatting. Using < to align front, and > to align end.
+                // Hence the total (i.e. a number) is right aligned, while the category
+                // is left aligned.
+                "{:<1$}{category:<2$} {total:>10.2}",
+                "",
+                4 * (depth - 1),
+                40 - 4 * (depth - 1),
+                category = n.catogory(),
+                total = n.total()
+            );
+        },
+        |n| n.total().floor() as i64,
+    );
 
     Ok(())
 }
