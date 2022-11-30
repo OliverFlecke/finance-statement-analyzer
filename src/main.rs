@@ -68,7 +68,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 "",
                 indent,
                 40 - indent,
-                category = n.catogory(),
+                category = n.catogory().cyan(),
                 total = format_with_color(n.total())
             );
 
