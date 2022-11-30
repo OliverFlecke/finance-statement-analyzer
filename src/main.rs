@@ -74,16 +74,23 @@ fn main() -> Result<(), Box<dyn Error>> {
 
             if args.print_items {
                 // Print records
-                n.get_records().for_each(|r| {
-                    println!(
-                        "{:<1$}{description:<2$}{amount:>10}",
-                        "",
-                        TAB_SIZE + indent,
-                        40 - (TAB_SIZE + indent),
-                        description = r.description(),
-                        amount = format_with_color(r.get_amount())
-                    )
-                });
+                n.get_records()
+                    .fold(HashMap::<&String, f64>::new(), |mut acc, x| {
+                        acc.entry(x.description())
+                            .and_modify(|amount| *amount += x.get_amount())
+                            .or_insert(x.get_amount());
+                        acc
+                    })
+                    .iter()
+                    .for_each(|(description, amount)| {
+                        println!(
+                            "{:<1$}{description:<2$}{amount:>10}",
+                            "",
+                            TAB_SIZE + indent,
+                            40 - (TAB_SIZE + indent),
+                            amount = format_with_color(*amount)
+                        )
+                    });
             }
         },
         |n| n.total().floor() as i64,
