@@ -60,6 +60,13 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
             const TAB_SIZE: usize = 4;
             let indent = TAB_SIZE * (depth - 1);
+
+            let total = if n.catogory() == &"Investment" {
+                format!("{:.2}", n.total()).yellow()
+            } else {
+                format_with_color(n.total())
+            };
+
             println!(
                 // Alignment formatting. Using < to align front, and > to align end.
                 // Hence the total (i.e. a number) is right aligned, while the category
@@ -69,7 +76,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                 indent,
                 40 - indent,
                 category = n.catogory().cyan(),
-                total = format_with_color(n.total())
             );
 
             if args.print_items {
@@ -99,7 +105,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut credits = 0.0;
     let mut debits = 0.0;
     for node in tree.into_iter() {
-        for record in node.borrow().get_records() {
+        for record in node.borrow().get_records().filter(|r| !ignore_record(r)) {
             if record.get_amount().is_sign_positive() {
                 credits += record.get_amount();
             } else {
@@ -115,6 +121,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("Total:   {: >10}", format_with_color(total));
 
     Ok(())
+}
+
+fn ignore_record(record: &Record) -> bool {
+    record
+        .category()
+        .as_ref()
+        .map(|x| x == "Investment")
+        .unwrap_or(false)
 }
 
 fn format_with_color(value: f64) -> ColoredString {
