@@ -1,3 +1,5 @@
+pub mod calc;
+
 use std::{
     cell::{Ref, RefCell},
     collections::HashMap,
@@ -39,6 +41,7 @@ impl Record {
     }
 }
 
+/// Represents the tree structure of expenses and income.
 #[derive(Debug, Default)]
 pub struct Tree {
     root: RefCell<Node>,
@@ -92,6 +95,37 @@ impl IntoIterator for Tree {
         let mut result = Vec::new();
         append(Rc::new(self.root), &mut result);
         result.into_iter()
+    }
+}
+
+#[derive(Debug, Default, Getters)]
+pub struct TreeTotal {
+    credits: f64,
+    debits: f64,
+}
+
+impl TreeTotal {
+    pub fn total(&self) -> f64 {
+        self.credits + self.debits
+    }
+
+    pub fn create_from<F>(tree: Tree, ignore_record: F) -> Self
+    where
+        F: Fn(&Record) -> bool,
+    {
+        let mut total = TreeTotal::default();
+
+        for node in tree.into_iter() {
+            for record in node.borrow().get_records().filter(|r| !ignore_record(r)) {
+                if record.get_amount().is_sign_positive() {
+                    total.credits += record.get_amount();
+                } else {
+                    total.debits += record.get_amount();
+                }
+            }
+        }
+
+        total
     }
 }
 

@@ -2,12 +2,11 @@ use std::{
     collections::HashMap,
     error::Error,
     fs::{self, File},
-    io::{self, Write},
 };
 
 use clap::Parser;
 use colored::{ColoredString, Colorize};
-use finance_analyzer::{Record, Tree};
+use finance_analyzer::{calc::get_category, Record, Tree, TreeTotal};
 
 #[derive(Debug, Parser)]
 struct Args {
@@ -102,23 +101,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         |n| n.total().floor() as i64,
     );
 
-    let mut credits = 0.0;
-    let mut debits = 0.0;
-    for node in tree.into_iter() {
-        for record in node.borrow().get_records().filter(|r| !ignore_record(r)) {
-            if record.get_amount().is_sign_positive() {
-                credits += record.get_amount();
-            } else {
-                debits += record.get_amount();
-            }
-        }
-    }
-
-    println!();
-    let total = credits + debits;
-    println!("Debits:  {: >10}", format_with_color(debits));
-    println!("Credits: {: >10}", format_with_color(credits));
-    println!("Total:   {: >10}", format_with_color(total));
+    let total = TreeTotal::create_from(tree, ignore_record);
+    println!("Debits:  {: >10}", format_with_color(*total.debits()));
+    println!("Credits: {: >10}", format_with_color(*total.credits()));
+    println!("Total:   {: >10}", format_with_color(total.total()));
 
     Ok(())
 }
@@ -148,32 +134,4 @@ fn get_initial_lookup(filename: &String) -> HashMap<String, String> {
         .ok()
         .and_then(|file| serde_json::from_reader(file).ok())
         .unwrap_or_default()
-}
-
-/// Get the catogory, either from the lookup or by asking the user.
-fn get_category(
-    record: &Record,
-    lookup: &HashMap<String, String>,
-) -> Result<String, Box<dyn Error>> {
-    if let Some(category) = lookup.get(record.description()) {
-        return Ok(category.to_owned());
-    }
-
-    print!(
-        "{}",
-        format!(
-            "Category missing for {} - {}. Enter new category: ",
-            record.date(),
-            record.description()
-        )
-        .yellow()
-    );
-    io::stdout().flush()?;
-
-    let mut category = String::new();
-    io::stdin().read_line(&mut category)?;
-    let c = category.trim().to_string();
-    category.clear();
-
-    Ok(c)
 }
