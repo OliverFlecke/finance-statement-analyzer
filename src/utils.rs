@@ -7,7 +7,7 @@ use crate::Tree;
 /// Format an amount with a persision of two digits and with a color indicating
 /// whether it is positive or negative
 pub fn format_with_color(value: f64) -> ColoredString {
-    let s = format!("{:.2}", value);
+    let s = format!("{value:.2}");
 
     if value.is_sign_positive() {
         s.green()
@@ -35,7 +35,7 @@ pub fn print_tree(tree: &Tree, print_items: bool) {
             const TAB_SIZE: usize = 4;
             let indent = TAB_SIZE * (depth - 1);
 
-            let total = if n.catogory() == &"Investment" {
+            let total = if n.catogory() == "Investment" {
                 format!("{:.2}", n.total()).yellow()
             } else {
                 format_with_color(n.total())

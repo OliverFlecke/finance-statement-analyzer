@@ -33,7 +33,7 @@ impl Tree {
         for result in reader.deserialize() {
             let mut record: Record = result?;
             if record.category().is_none() {
-                record.set_category(get_category(&record, &lookup)?);
+                record.set_category(get_category(&record, lookup)?);
             }
             if let Some(category) = record.category() {
                 lookup.insert(record.description().to_owned(), category.to_owned());
