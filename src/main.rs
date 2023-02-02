@@ -24,7 +24,7 @@ struct Args {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
-    let ignored_categories_text = fs::read_to_string(args.ignored_categories)?;
+    let ignored_categories_text = fs::read_to_string(args.ignored_categories).unwrap_or_default();
     let ignored_categories = ignored_categories_text.lines().collect::<HashSet<&str>>();
 
     let mut lookup: HashMap<String, String> = get_initial_lookup(&args.lookup);
