@@ -1,6 +1,6 @@
 use std::{
     cell::{Ref, RefCell},
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     error::Error,
     fs,
     rc::Rc,
@@ -112,14 +112,15 @@ impl TreeTotal {
         self.credits + self.debits
     }
 
-    pub fn create_from<F>(tree: Tree, ignore_record: F) -> Self
-    where
-        F: Fn(&Record) -> bool,
-    {
+    pub fn create_from(tree: Tree, ignored_categories: &HashSet<&str>) -> Self {
         let mut total = TreeTotal::default();
 
         for node in tree.into_iter() {
-            for record in node.borrow().get_records().filter(|r| !ignore_record(r)) {
+            for record in node
+                .borrow()
+                .get_records()
+                .filter(|r| !Self::ignore_record(r, ignored_categories))
+            {
                 if record.get_amount().is_sign_positive() {
                     total.credits += record.get_amount();
                 } else {
@@ -129,6 +130,14 @@ impl TreeTotal {
         }
 
         total
+    }
+
+    fn ignore_record(record: &Record, ignored_categories: &HashSet<&str>) -> bool {
+        record
+            .category()
+            .as_ref()
+            .map(|c| ignored_categories.contains(c.as_str()))
+            .unwrap_or(false)
     }
 }
 

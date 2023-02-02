@@ -1,6 +1,7 @@
 *.csv
 *.pdf
 lookup.json
+ignored_categories.txt
 .DS_store
 
 # Added by cargo
