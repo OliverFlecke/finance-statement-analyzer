@@ -1,9 +1,8 @@
 use std::{collections::HashMap, error::Error, fs};
 
 use clap::Parser;
-use colored::Colorize;
 use finance_analyzer::{
-    utils::{format_with_color, get_initial_lookup},
+    utils::{format_with_color, get_initial_lookup, print_tree},
     Record, Tree, TreeTotal,
 };
 
@@ -26,55 +25,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Save lookup dictionary
     fs::write(&args.lookup, serde_json::to_string_pretty(&lookup)?)?;
 
-    // Output trees
-    tree.preorder_sort_by_key(
-        |n, depth| {
-            if depth == 0 {
-                return;
-            }
-            const TAB_SIZE: usize = 4;
-            let indent = TAB_SIZE * (depth - 1);
-
-            let total = if n.catogory() == &"Investment" {
-                format!("{:.2}", n.total()).yellow()
-            } else {
-                format_with_color(n.total())
-            };
-
-            println!(
-                // Alignment formatting. Using < to align front, and > to align end.
-                // Hence the total (i.e. a number) is right aligned, while the category
-                // is left aligned.
-                "{:<1$}{category:<2$}{total:>10}",
-                "",
-                indent,
-                40 - indent,
-                category = n.catogory().cyan(),
-            );
-
-            if args.print_items {
-                // Print records
-                n.get_records()
-                    .fold(HashMap::<&String, f64>::new(), |mut acc, x| {
-                        acc.entry(x.description())
-                            .and_modify(|amount| *amount += x.get_amount())
-                            .or_insert(x.get_amount());
-                        acc
-                    })
-                    .iter()
-                    .for_each(|(description, amount)| {
-                        println!(
-                            "{:<1$}{description:<2$}{amount:>10}",
-                            "",
-                            TAB_SIZE + indent,
-                            40 - (TAB_SIZE + indent),
-                            amount = format_with_color(*amount)
-                        )
-                    });
-            }
-        },
-        |n| n.total().floor() as i64,
-    );
+    print_tree(&tree, args.print_items);
 
     let total = TreeTotal::create_from(tree, ignore_record);
     println!("Debits:  {: >10}", format_with_color(*total.debits()));

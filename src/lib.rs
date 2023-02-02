@@ -1,6 +1,6 @@
 pub mod calc;
 pub(crate) mod record;
-pub(crate) mod tree;
+pub mod tree;
 pub mod utils;
 
 pub use record::Record;
