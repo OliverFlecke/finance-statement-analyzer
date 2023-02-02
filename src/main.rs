@@ -6,8 +6,9 @@ use std::{
 
 use clap::Parser;
 use finance_analyzer::{
+    tree::total_tree::TreeTotal,
     utils::{get_initial_lookup, print_tree},
-    Tree, TreeTotal,
+    Tree,
 };
 
 #[derive(Debug, Parser)]

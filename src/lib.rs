@@ -4,4 +4,4 @@ pub mod tree;
 pub mod utils;
 
 pub use record::Record;
-pub use tree::{Tree, TreeTotal};
+pub use tree::Tree;
