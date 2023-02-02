@@ -1,3 +1,4 @@
+pub mod diff_tree;
 pub mod total_tree;
 
 use std::{
@@ -81,6 +82,13 @@ impl Tree {
     }
 }
 
+impl PartialEq for Tree {
+    fn eq(&self, other: &Self) -> bool {
+        //self.root.eq(other.root)
+        todo!()
+    }
+}
+
 impl IntoIterator for Tree {
     type Item = Rc<RefCell<Node>>;
     type IntoIter = std::vec::IntoIter<Rc<RefCell<Node>>>;
@@ -107,6 +115,34 @@ pub struct Node {
     category: String,
     children: HashMap<String, Rc<RefCell<Node>>>,
     records: Vec<Record>,
+}
+
+impl PartialEq for Node {
+    fn eq(&self, other: &Self) -> bool {
+        if self.category != other.category {
+            return false;
+        }
+
+        if !self.records.eq(&other.records) {
+            return false;
+        }
+
+        if self.children.len() != other.children.len() {
+            return false;
+        }
+
+        for child in self.children.iter() {
+            if let Some(other_child) = other.children.get(child.0) {
+                if child.1 != other_child {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        }
+
+        true
+    }
 }
 
 impl Node {
@@ -196,5 +232,103 @@ impl Node {
         sorted_children
             .iter()
             .for_each(|n| Self::preorder_sort_by_key(n, action, key, depth + 1));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use fake::{Fake, Faker};
+
+    #[test]
+    fn node_without_children_eq() {
+        let node = Node {
+            category: Faker.fake(),
+            children: HashMap::default(),
+            records: Vec::default(),
+        };
+        assert_eq!(node, node);
+    }
+
+    #[test]
+    fn node_with_records_eq() {
+        let node = Node {
+            category: Faker.fake(),
+            children: HashMap::default(),
+            records: vec![Faker.fake()],
+        };
+
+        assert_eq!(node, node);
+
+        let other = Node {
+            category: Faker.fake(),
+            children: HashMap::default(),
+            records: vec![Faker.fake()],
+        };
+
+        assert_ne!(node, other);
+    }
+
+    #[test]
+    fn node_with_children_eq() {
+        // Assert equality
+        let mut children = HashMap::new();
+        children.insert(
+            Faker.fake(),
+            Rc::new(RefCell::new(Node {
+                category: Faker.fake(),
+                children: HashMap::default(),
+                records: vec![Faker.fake(), Faker.fake()],
+            })),
+        );
+        children.insert(
+            Faker.fake(),
+            Rc::new(RefCell::new(Node {
+                category: Faker.fake(),
+                children: HashMap::default(),
+                records: vec![Faker.fake(), Faker.fake()],
+            })),
+        );
+        let node = Node {
+            category: Faker.fake(),
+            children,
+            records: Vec::default(),
+        };
+
+        assert_eq!(node, node);
+
+        // Assert inequality
+        let mut other_children = HashMap::new();
+        other_children.insert(
+            Faker.fake(),
+            Rc::new(RefCell::new(Node {
+                category: Faker.fake(),
+                children: HashMap::default(),
+                records: vec![Faker.fake(), Faker.fake()],
+            })),
+        );
+        other_children.insert(
+            Faker.fake(),
+            Rc::new(RefCell::new(Node {
+                category: Faker.fake(),
+                children: HashMap::default(),
+                records: vec![Faker.fake(), Faker.fake()],
+            })),
+        );
+        other_children.insert(
+            Faker.fake(),
+            Rc::new(RefCell::new(Node {
+                category: Faker.fake(),
+                children: HashMap::default(),
+                records: vec![Faker.fake(), Faker.fake()],
+            })),
+        );
+        let other = Node {
+            category: Faker.fake(),
+            children: other_children,
+            records: Vec::default(),
+        };
+        assert_ne!(node, other);
     }
 }

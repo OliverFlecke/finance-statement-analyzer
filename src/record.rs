@@ -1,9 +1,13 @@
 use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
 
+#[cfg(test)]
+use fake::{Dummy, Fake};
+
 /// A record matching the headers from `sample.csv`.
 /// Used to read and deserialize content from similar financial csv files.
-#[derive(Debug, Deserialize, Serialize, Getters, Clone)]
+#[cfg_attr(test, derive(Dummy))]
+#[derive(Debug, Deserialize, Serialize, Getters, Clone, PartialEq)]
 pub struct Record {
     #[serde(rename = "Transaction Date")]
     date: String,
