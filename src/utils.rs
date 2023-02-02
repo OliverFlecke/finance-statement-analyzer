@@ -2,6 +2,8 @@ use std::{collections::HashMap, fs::File};
 
 use colored::{ColoredString, Colorize};
 
+/// Format an amount with a persision of two digits and with a color indicating
+/// whether it is positive or negative
 pub fn format_with_color(value: f64) -> ColoredString {
     let s = format!("{:.2}", value);
 
