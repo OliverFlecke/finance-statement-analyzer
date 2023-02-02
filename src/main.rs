@@ -1,12 +1,11 @@
-use std::{
-    collections::HashMap,
-    error::Error,
-    fs::{self, File},
-};
+use std::{collections::HashMap, error::Error, fs};
 
 use clap::Parser;
-use colored::{ColoredString, Colorize};
-use finance_analyzer::{calc::get_category, Record, Tree, TreeTotal};
+use colored::Colorize;
+use finance_analyzer::{
+    utils::{format_with_color, get_initial_lookup},
+    Record, Tree, TreeTotal,
+};
 
 #[derive(Debug, Parser)]
 struct Args {
@@ -21,32 +20,8 @@ struct Args {
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
-    let tmp = args.filename.clone() + ".tmp";
-
-    let mut reader = csv::Reader::from_path(&args.filename)?;
-    let mut writer = csv::Writer::from_path(&tmp)?;
-
     let mut lookup: HashMap<String, String> = get_initial_lookup(&args.lookup);
-
-    let tree = Tree::default();
-
-    for result in reader.deserialize() {
-        let mut record: Record = result?;
-        if record.category().is_none() {
-            record.set_category(get_category(&record, &lookup)?);
-        }
-        if let Some(category) = record.category() {
-            lookup.insert(record.description().to_owned(), category.to_owned());
-        }
-
-        writer.serialize(record.clone())?;
-
-        // Tree
-        tree.insert(record);
-    }
-
-    writer.flush()?;
-    fs::rename(&tmp, &args.filename)?;
+    let tree = Tree::load_from_file(&args.filename, &mut lookup)?;
 
     // Save lookup dictionary
     fs::write(&args.lookup, serde_json::to_string_pretty(&lookup)?)?;
@@ -115,23 +90,4 @@ fn ignore_record(record: &Record) -> bool {
         .as_ref()
         .map(|x| x == "Investment")
         .unwrap_or(false)
-}
-
-fn format_with_color(value: f64) -> ColoredString {
-    let s = format!("{:.2}", value);
-
-    if value.is_sign_positive() {
-        s.green()
-    } else {
-        s.red()
-    }
-}
-
-/// Get the initial lookup `HashMap` stored in the given file.
-/// If the file does not exist or no filename is provided, an empty map is returned.
-fn get_initial_lookup(filename: &String) -> HashMap<String, String> {
-    File::open(filename)
-        .ok()
-        .and_then(|file| serde_json::from_reader(file).ok())
-        .unwrap_or_default()
 }

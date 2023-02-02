@@ -1,12 +1,16 @@
 pub mod calc;
+pub mod utils;
 
 use std::{
     cell::{Ref, RefCell},
     collections::HashMap,
+    error::Error,
+    fs,
     rc::Rc,
     str::Split,
 };
 
+use calc::get_category;
 use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
 
@@ -48,6 +52,40 @@ pub struct Tree {
 }
 
 impl Tree {
+    /// Load a tree from a file, and use the lookup to assign categories to the lines.
+    /// This will interatively ask the user for categories if none can be found in the provided lookup.
+    pub fn load_from_file(
+        filename: impl AsRef<str>,
+        lookup: &mut HashMap<String, String>,
+    ) -> Result<Tree, Box<dyn Error>> {
+        let tmp = filename.as_ref().to_owned() + ".tmp";
+
+        let mut reader = csv::Reader::from_path(filename.as_ref())?;
+        let mut writer = csv::Writer::from_path(&tmp)?;
+
+        let tree = Tree::default();
+
+        for result in reader.deserialize() {
+            let mut record: Record = result?;
+            if record.category().is_none() {
+                record.set_category(get_category(&record, &lookup)?);
+            }
+            if let Some(category) = record.category() {
+                lookup.insert(record.description().to_owned(), category.to_owned());
+            }
+
+            writer.serialize(record.clone())?;
+
+            // Tree
+            tree.insert(record);
+        }
+
+        writer.flush()?;
+        fs::rename(&tmp, filename.as_ref())?;
+
+        Ok(tree)
+    }
+
     pub fn insert(&self, record: Record) {
         Node::insert(&self.root, record);
     }
