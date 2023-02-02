@@ -6,7 +6,7 @@ use fake::{Dummy, Fake};
 
 /// A record matching the headers from `sample.csv`.
 /// Used to read and deserialize content from similar financial csv files.
-#[cfg_attr(test, derive(Dummy))]
+#[cfg_attr(test, derive(Dummy, derive_new::new))]
 #[derive(Debug, Deserialize, Serialize, Getters, Clone, PartialEq)]
 pub struct Record {
     #[serde(rename = "Transaction Date")]

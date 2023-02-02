@@ -84,8 +84,7 @@ impl Tree {
 
 impl PartialEq for Tree {
     fn eq(&self, other: &Self) -> bool {
-        //self.root.eq(other.root)
-        todo!()
+        self.root.eq(&other.root)
     }
 }
 
