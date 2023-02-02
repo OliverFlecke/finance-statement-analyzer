@@ -2,12 +2,13 @@ use std::{
     cell::{Ref, RefCell},
     collections::{HashMap, HashSet},
     error::Error,
+    fmt::Display,
     fs,
     rc::Rc,
     str::Split,
 };
 
-use crate::{calc::get_category, Record};
+use crate::{calc::get_category, utils::format_with_color, Record};
 use derive_getters::Getters;
 
 /// Represents the tree structure of expenses and income.
@@ -138,6 +139,16 @@ impl TreeTotal {
             .as_ref()
             .map(|c| ignored_categories.contains(c.as_str()))
             .unwrap_or(false)
+    }
+}
+
+impl Display for TreeTotal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Debits:  {: >10}", format_with_color(self.debits))?;
+        writeln!(f, "Credits: {: >10}", format_with_color(self.credits))?;
+        write!(f, "Total:   {: >10}", format_with_color(self.total()))?;
+
+        Ok(())
     }
 }
 

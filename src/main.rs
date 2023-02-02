@@ -6,7 +6,7 @@ use std::{
 
 use clap::Parser;
 use finance_analyzer::{
-    utils::{format_with_color, get_initial_lookup, print_tree},
+    utils::{get_initial_lookup, print_tree},
     Tree, TreeTotal,
 };
 
@@ -35,10 +35,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     print_tree(&tree, args.print_items);
 
-    let total = TreeTotal::create_from(tree, &ignored_categories);
-    println!("Debits:  {: >10}", format_with_color(*total.debits()));
-    println!("Credits: {: >10}", format_with_color(*total.credits()));
-    println!("Total:   {: >10}", format_with_color(total.total()));
+    println!("{}", TreeTotal::create_from(tree, &ignored_categories));
 
     Ok(())
 }
