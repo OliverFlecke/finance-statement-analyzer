@@ -1,7 +1,8 @@
 // use std::{cell::RefCell, collections::HashMap, io::Split, rc::Rc};
 
+use std::collections::HashSet;
+
 use crate::{utils::format_with_color, Tree};
-use itertools::Itertools;
 
 // #[derive(Debug, Default)]
 // pub struct DiffNode {
@@ -31,35 +32,50 @@ pub struct DiffTree {
 }
 
 impl DiffTree {
-    pub fn compute_diff(left: Tree, right: Tree) {
-        // let categories = left.root.borrow().children.keys().cloned();
-        for l in left
-            .root
-            .borrow()
-            .children
-            .values()
-            .cloned()
-            .sorted_by_cached_key(|x| x.borrow().total().floor() as i64)
-        {
-            let category = l.borrow().category.to_owned();
-            let left_total = l.borrow().total();
-            let right_total = right
-                .root
-                .borrow()
-                .children
-                .get(&category)
-                .map(|n| n.borrow().total())
-                .unwrap_or(0.0);
+    pub fn compute_diff(trees: Vec<Tree>) {
+        let mut category_set = HashSet::new();
+        trees.iter().for_each(|t| {
+            t.root.borrow().children.keys().for_each(|c| {
+                category_set.insert(c.clone());
+            })
+        });
+        let categories = category_set.iter().collect::<Vec<_>>();
 
-            // DiffNode::insert(&out.root, category, vec![left_total, right_total]);
+        for category in categories {
+            print!("{category:<20}");
 
-            println!(
-                "{:<20} Left: {:>10} \tright: {:>10}, diff: {:>10}",
-                category,
-                format_with_color(left_total),
-                format_with_color(right_total),
-                format_with_color(right_total - left_total)
-            );
+            trees
+                .iter()
+                .map(|t| {
+                    t.root
+                        .borrow()
+                        .children
+                        .get(category)
+                        .map(|n| n.borrow().total())
+                        .unwrap_or(0.0)
+                })
+                .for_each(|total| print!("{:>10}", format_with_color(total)));
+
+            println!();
+
+            // let left_total = l.borrow().total();
+            // let right_total = right
+            //     .root
+            //     .borrow()
+            //     .children
+            //     .get(&category)
+            //     .map(|n| n.borrow().total())
+            //     .unwrap_or(0.0);
+
+            // // DiffNode::insert(&out.root, category, vec![left_total, right_total]);
+
+            // println!(
+            //     "{:<20} Left: {:>10} \tright: {:>10}, diff: {:>10}",
+            //     category,
+            //     format_with_color(left_total),
+            //     format_with_color(right_total),
+            //     format_with_color(right_total - left_total)
+            // );
         }
     }
 }

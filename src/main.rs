@@ -50,10 +50,12 @@ fn main() -> Result<(), Box<dyn Error>> {
             println!("{}", TreeTotal::create_from(tree, &ignored_categories));
         }
         Commands::Compare { files } => {
-            let left = Tree::load_from_file(&files[0], &mut lookup)?;
-            let right = Tree::load_from_file(&files[1], &mut lookup)?;
+            let trees = files
+                .iter()
+                .map(|f| Tree::load_from_file(f, &mut lookup).unwrap())
+                .collect();
 
-            DiffTree::compute_diff(left, right);
+            DiffTree::compute_diff(trees);
         }
     };
 
