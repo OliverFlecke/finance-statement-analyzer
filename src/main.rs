@@ -24,7 +24,6 @@ struct Args {
 #[derive(Debug, Subcommand)]
 enum Commands {
     Analyze {
-        #[arg(short, long)]
         filename: String,
         #[arg(short, long = "print-items")]
         print_items: bool,
@@ -47,7 +46,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         } => {
             let tree = Tree::load_from_file(&filename, &mut lookup)?;
             print_tree(&tree, print_items);
-            println!("{}", TreeTotal::create_from(tree, &ignored_categories));
+            println!("{}", TreeTotal::create_from(&tree, &ignored_categories));
         }
         Commands::Compare { files } => {
             let trees = files

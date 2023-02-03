@@ -1,10 +1,10 @@
-use std::{collections::HashSet, fmt::Display};
+use std::{cell::RefCell, collections::HashSet, fmt::Display};
 
 use derive_getters::Getters;
 
 use crate::{utils::format_with_color, Record, Tree};
 
-#[derive(Debug, Default, Getters)]
+#[derive(Debug, Clone, Copy, Default, Getters)]
 pub struct TreeTotal {
     credits: f64,
     debits: f64,
@@ -15,24 +15,26 @@ impl TreeTotal {
         self.credits + self.debits
     }
 
-    pub fn create_from(tree: Tree, ignored_categories: &HashSet<&str>) -> Self {
-        let mut total = TreeTotal::default();
+    pub fn create_from(tree: &Tree, ignored_categories: &HashSet<&str>) -> Self {
+        let total = RefCell::new(TreeTotal::default());
 
-        for node in tree.into_iter() {
-            for record in node
-                .borrow()
-                .get_records()
+        tree.preorder(|node, _| {
+            node.get_records()
                 .filter(|r| !Self::ignore_record(r, ignored_categories))
-            {
-                if record.get_amount().is_sign_positive() {
-                    total.credits += record.get_amount();
-                } else {
-                    total.debits += record.get_amount();
-                }
-            }
-        }
+                .for_each(|record| {
+                    total.borrow_mut().add(record.get_amount());
+                })
+        });
 
-        total
+        total.into_inner()
+    }
+
+    fn add(&mut self, amount: f64) {
+        if amount.is_sign_positive() {
+            self.credits += amount;
+        } else {
+            self.debits += amount;
+        }
     }
 
     fn ignore_record(record: &Record, ignored_categories: &HashSet<&str>) -> bool {
