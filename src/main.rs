@@ -3,7 +3,7 @@ use std::{error::Error, fs};
 use clap::{Args, Parser, Subcommand};
 use finance_analyzer::{
     tree::{
-        diff_tree::{CompareOptions, DiffTree},
+        diff_tree::{CompareOptions, CompareTree},
         total_tree::TreeTotal,
     },
     utils::{get_initial_lookup, print_tree, AnalyzeOptions, Lookup},
@@ -87,7 +87,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
         Commands::Compare(compare) => {
             let trees = compare.get_trees(&mut lookup);
-            DiffTree::compute_diff(trees, compare.into());
+            let compare_tree = CompareTree::new(&trees, compare.into());
+            println!("{compare_tree}");
         }
     };
 
