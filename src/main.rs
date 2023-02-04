@@ -34,6 +34,8 @@ struct Analyze {
     ignored_categories: String,
     #[arg(long, default_value = "true")]
     hide_ignored: bool,
+    #[arg(short, long)]
+    depth: Option<usize>,
 }
 
 impl From<&Analyze> for AnalyzeOptions {
@@ -45,7 +47,12 @@ impl From<&Analyze> for AnalyzeOptions {
             .map(|l| l.to_string())
             .collect::<HashSet<String>>();
 
-        AnalyzeOptions::new(ignored_categories, value.print_items, value.hide_ignored)
+        AnalyzeOptions::new(
+            ignored_categories,
+            value.print_items,
+            value.hide_ignored,
+            value.depth,
+        )
     }
 }
 

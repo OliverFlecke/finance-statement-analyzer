@@ -34,6 +34,7 @@ pub struct AnalyzeOptions {
     ignored_categories: HashSet<String>,
     print_items: bool,
     hide_ignored: bool,
+    depth: Option<usize>,
 }
 
 pub fn print_tree(tree: &Tree, total_tree: &TreeTotal, opts: &AnalyzeOptions) {
@@ -41,7 +42,7 @@ pub fn print_tree(tree: &Tree, total_tree: &TreeTotal, opts: &AnalyzeOptions) {
 
     tree.preorder_sort_by_key(
         |n, depth| {
-            if depth == 0 {
+            if depth == 0 || opts.depth.map(|d| depth > d).unwrap_or(false) {
                 return;
             }
             let indent = TAB_SIZE * (depth - 1);

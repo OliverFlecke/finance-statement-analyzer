@@ -53,6 +53,11 @@ impl Display for TreeTotal {
         writeln!(f, "Debits:  {: >10}", format_with_color(self.debits))?;
         writeln!(f, "Credits: {: >10}", format_with_color(self.credits))?;
         write!(f, "Total:   {: >10}", format_with_color(self.total()))?;
+        write!(
+            f,
+            "\tPercentage saved: {} %",
+            format_with_color(100.0 * (self.total() / self.credits))
+        )?;
 
         Ok(())
     }
