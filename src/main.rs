@@ -1,13 +1,12 @@
-use std::{
-    collections::{HashMap, HashSet},
-    error::Error,
-    fs,
-};
+use std::{error::Error, fs};
 
 use clap::{Args, Parser, Subcommand};
 use finance_analyzer::{
-    tree::{diff_tree::DiffTree, total_tree::TreeTotal},
-    utils::{get_initial_lookup, print_tree, AnalyzeOptions},
+    tree::{
+        diff_tree::{CompareOptions, DiffTree},
+        total_tree::TreeTotal,
+    },
+    utils::{get_initial_lookup, print_tree, AnalyzeOptions, Lookup},
     Tree,
 };
 
@@ -40,15 +39,8 @@ struct Analyze {
 
 impl From<&Analyze> for AnalyzeOptions {
     fn from(value: &Analyze) -> Self {
-        let ignored_categories_text =
-            fs::read_to_string(value.ignored_categories.clone()).unwrap_or_default();
-        let ignored_categories = ignored_categories_text
-            .lines()
-            .map(|l| l.to_string())
-            .collect::<HashSet<String>>();
-
         AnalyzeOptions::new(
-            ignored_categories,
+            value.ignored_categories.as_str().into(),
             value.print_items,
             value.hide_ignored,
             value.depth,
@@ -59,11 +51,28 @@ impl From<&Analyze> for AnalyzeOptions {
 #[derive(Debug, Args)]
 struct Compare {
     files: Vec<String>,
+    #[arg(long, default_value = "ignored_categories.txt")]
+    ignored_categories: String,
+}
+
+impl Compare {
+    pub fn get_trees(&self, lookup: &mut Lookup) -> Vec<Tree> {
+        self.files
+            .iter()
+            .map(|f| Tree::load_from_file(f, lookup).unwrap())
+            .collect()
+    }
+}
+
+impl From<&Compare> for CompareOptions {
+    fn from(value: &Compare) -> Self {
+        CompareOptions::new(value.ignored_categories.as_str().into())
+    }
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Arguments::parse();
-    let mut lookup: HashMap<String, String> = get_initial_lookup(&args.lookup);
+    let mut lookup: Lookup = get_initial_lookup(&args.lookup);
 
     match &args.command {
         Commands::Analyze(analyze) => {
@@ -76,13 +85,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             print_tree(&tree, &total, &opts);
             println!("{total}");
         }
-        Commands::Compare(Compare { files }) => {
-            let trees = files
-                .iter()
-                .map(|f| Tree::load_from_file(f, &mut lookup).unwrap())
-                .collect();
-
-            DiffTree::compute_diff(trees);
+        Commands::Compare(compare) => {
+            let trees = compare.get_trees(&mut lookup);
+            DiffTree::compute_diff(trees, compare.into());
         }
     };
 

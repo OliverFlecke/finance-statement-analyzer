@@ -10,7 +10,7 @@ use std::{
     str::Split,
 };
 
-use crate::{calc::get_category, Record};
+use crate::{calc::get_category, utils::Lookup, Record};
 
 /// Represents the tree structure of expenses and income.
 #[derive(Debug, Default)]
@@ -43,7 +43,7 @@ impl Tree {
     /// This will interatively ask the user for categories if none can be found in the provided lookup.
     pub fn load_from_file(
         filename: impl AsRef<str>,
-        lookup: &mut HashMap<String, String>,
+        lookup: &mut Lookup,
     ) -> Result<Tree, Box<dyn Error>> {
         let tmp = filename.as_ref().to_owned() + ".tmp";
 

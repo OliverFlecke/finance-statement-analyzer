@@ -1,4 +1,5 @@
-use std::collections::HashSet;
+pub mod ignored_categories;
+
 use std::{collections::HashMap, fs::File};
 
 use colored::{ColoredString, Colorize};
@@ -7,6 +8,8 @@ use derive_new::new;
 
 use crate::tree::total_tree::TreeTotal;
 use crate::Tree;
+
+use self::ignored_categories::IgnoredCategories;
 
 /// Format an amount with a persision of two digits and with a color indicating
 /// whether it is positive or negative
@@ -20,6 +23,8 @@ pub fn format_with_color(value: f64) -> ColoredString {
     }
 }
 
+pub type Lookup = HashMap<String, String>;
+
 /// Get the initial lookup `HashMap` stored in the given file.
 /// If the file does not exist or no filename is provided, an empty map is returned.
 pub fn get_initial_lookup(filename: &String) -> HashMap<String, String> {
@@ -31,7 +36,7 @@ pub fn get_initial_lookup(filename: &String) -> HashMap<String, String> {
 
 #[derive(Debug, Clone, new, Getters)]
 pub struct AnalyzeOptions {
-    ignored_categories: HashSet<String>,
+    ignored_categories: IgnoredCategories,
     print_items: bool,
     hide_ignored: bool,
     depth: Option<usize>,

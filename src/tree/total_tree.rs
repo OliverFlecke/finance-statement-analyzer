@@ -1,8 +1,11 @@
-use std::{cell::RefCell, collections::HashSet, fmt::Display};
+use std::{cell::RefCell, fmt::Display};
 
 use derive_getters::Getters;
 
-use crate::{utils::format_with_color, Record, Tree};
+use crate::{
+    utils::{format_with_color, ignored_categories::IgnoredCategories},
+    Record, Tree,
+};
 
 /// Structure to represent the total value of a `Tree`.
 /// Split up to contain both the total credits and debits.
@@ -17,7 +20,11 @@ impl TreeTotal {
         self.credits + self.debits
     }
 
-    pub fn create_from(tree: &Tree, ignored_categories: &HashSet<String>) -> Self {
+    pub fn percentage_saved(&self) -> f64 {
+        100.0 * (self.total() / self.credits())
+    }
+
+    pub fn create_from(tree: &Tree, ignored_categories: &IgnoredCategories) -> Self {
         let total = RefCell::new(TreeTotal::default());
 
         tree.preorder(|node, _| {
@@ -39,7 +46,7 @@ impl TreeTotal {
         }
     }
 
-    fn ignore_record(record: &Record, ignored_categories: &HashSet<String>) -> bool {
+    fn ignore_record(record: &Record, ignored_categories: &IgnoredCategories) -> bool {
         record
             .category()
             .as_ref()

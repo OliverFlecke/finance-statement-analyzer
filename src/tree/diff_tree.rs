@@ -1,15 +1,28 @@
 use std::collections::HashSet;
 
 use colored::Colorize;
+use derive_new::new;
 use itertools::Itertools;
 
-use crate::{utils::format_with_color, Tree};
+use crate::{
+    tree::total_tree::TreeTotal,
+    utils::{format_with_color, ignored_categories::IgnoredCategories},
+    Tree,
+};
+
+#[derive(Debug, Clone, new)]
+pub struct CompareOptions {
+    ignored_categories: IgnoredCategories,
+}
 
 #[derive(Debug, Default)]
 pub struct DiffTree;
 
+const HEADER_WIDTH: usize = 20;
+const COLUMN_WIDTH: usize = 10;
+
 impl DiffTree {
-    pub fn compute_diff(trees: Vec<Tree>) {
+    pub fn compute_diff(trees: Vec<Tree>, options: CompareOptions) {
         let mut category_set = HashSet::new();
         trees.iter().for_each(|t| {
             t.root.borrow().children.keys().for_each(|c| {
@@ -21,11 +34,11 @@ impl DiffTree {
         let categories = category_set.iter().collect::<Vec<_>>();
 
         // Output the name of the trees, usually indicating the month
-        print!("{:<20}", "");
-        print!("{:>10}", "Average");
+        print!("{:<HEADER_WIDTH$}", "");
+        print!("{:>COLUMN_WIDTH$}", "Average");
         trees
             .iter()
-            .for_each(|t| print!("{:>10}", t.get_name().blue()));
+            .for_each(|t| print!("{:>COLUMN_WIDTH$}", t.get_name().blue()));
         println!();
 
         Self::output_category(&trees, "Income");
@@ -37,12 +50,46 @@ impl DiffTree {
             .for_each(|category| {
                 Self::output_category(&trees, category);
             });
+
+        println!();
+        // Output amount saved this period
+        print!("{:<HEADER_WIDTH$}", "Saved");
+        let totals: Vec<TreeTotal> = trees
+            .iter()
+            .map(|t| TreeTotal::create_from(t, &options.ignored_categories))
+            .collect();
+        print!(
+            "{:>COLUMN_WIDTH$}",
+            format_with_color(totals.iter().map(|x| x.total()).sum::<f64>() / totals.len() as f64)
+        );
+        totals
+            .iter()
+            .for_each(|t| print!("{:>COLUMN_WIDTH$}", format_with_color(t.total())));
+        println!();
+
+        // Print saved in percentage
+        print!("{:<HEADER_WIDTH$}", "Percentage");
+        print!(
+            "{:>width$} %",
+            format_with_color(
+                totals.iter().map(|t| t.percentage_saved()).sum::<f64>() / totals.len() as f64
+            ),
+            width = COLUMN_WIDTH - 2
+        );
+        totals.iter().for_each(|t| {
+            print!(
+                "{:>width$} %",
+                format_with_color(100.0 * (t.total() / t.credits())),
+                width = COLUMN_WIDTH - 2
+            )
+        });
+        println!();
     }
 
     fn output_category(trees: &Vec<Tree>, category: &str) {
-        print!("{category:<20}");
+        print!("{category:<HEADER_WIDTH$}");
 
-        Self::output_average(&trees, category);
+        Self::output_average(trees, category);
 
         trees
             .iter()
@@ -56,7 +103,7 @@ impl DiffTree {
             })
             .for_each(|total| {
                 print!(
-                    "{:>10}",
+                    "{:>COLUMN_WIDTH$}",
                     if total == 0.0 {
                         "0".green()
                     } else {
@@ -82,7 +129,7 @@ impl DiffTree {
             })
             .sum::<f64>()
             / trees.len() as f64;
-        print!("{:>10}", format_with_color(average));
+        print!("{:>COLUMN_WIDTH$}", format_with_color(average));
     }
 }
 
