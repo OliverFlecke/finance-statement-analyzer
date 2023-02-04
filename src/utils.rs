@@ -1,7 +1,11 @@
+use std::collections::HashSet;
 use std::{collections::HashMap, fs::File};
 
 use colored::{ColoredString, Colorize};
+use derive_getters::Getters;
+use derive_new::new;
 
+use crate::tree::total_tree::TreeTotal;
 use crate::Tree;
 
 /// Format an amount with a persision of two digits and with a color indicating
@@ -25,34 +29,47 @@ pub fn get_initial_lookup(filename: &String) -> HashMap<String, String> {
         .unwrap_or_default()
 }
 
-pub fn print_tree(tree: &Tree, print_items: bool) {
-    // Output trees
+#[derive(Debug, Clone, new, Getters)]
+pub struct AnalyzeOptions {
+    ignored_categories: HashSet<String>,
+    print_items: bool,
+    hide_ignored: bool,
+}
+
+pub fn print_tree(tree: &Tree, total_tree: &TreeTotal, opts: &AnalyzeOptions) {
+    const TAB_SIZE: usize = 4;
+
     tree.preorder_sort_by_key(
         |n, depth| {
             if depth == 0 {
                 return;
             }
-            const TAB_SIZE: usize = 4;
             let indent = TAB_SIZE * (depth - 1);
+            let is_ignored = opts.ignored_categories.contains(n.catogory());
 
-            let total = if n.catogory() == "Investment" {
+            let total = if is_ignored {
+                if opts.hide_ignored {
+                    return;
+                }
                 format!("{:.2}", n.total()).yellow()
             } else {
                 format_with_color(n.total())
             };
 
+            let percentage = 100.0 * (n.total() / total_tree.credits()).abs();
+
             println!(
                 // Alignment formatting. Using < to align front, and > to align end.
                 // Hence the total (i.e. a number) is right aligned, while the category
                 // is left aligned.
-                "{:<1$}{category:<2$}{total:>10}",
+                "{:<1$}{category:<2$}{total:>10}{percentage:>10.2} %",
                 "",
                 indent,
                 40 - indent,
-                category = n.catogory().cyan(),
+                category = n.catogory().cyan()
             );
 
-            if print_items {
+            if opts.print_items {
                 // Print records
                 n.get_records()
                     .fold(HashMap::<&String, f64>::new(), |mut acc, x| {

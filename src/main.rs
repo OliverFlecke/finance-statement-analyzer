@@ -4,51 +4,70 @@ use std::{
     fs,
 };
 
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 use finance_analyzer::{
     tree::{diff_tree::DiffTree, total_tree::TreeTotal},
-    utils::{get_initial_lookup, print_tree},
+    utils::{get_initial_lookup, print_tree, AnalyzeOptions},
     Tree,
 };
 
 #[derive(Debug, Parser)]
-struct Args {
+struct Arguments {
     #[command(subcommand)]
     command: Commands,
     #[arg(short, long, default_value = "lookup.json")]
     lookup: String,
-    #[arg(long, default_value = "ignored_categories.txt")]
-    ignored_categories: String,
 }
 
 #[derive(Debug, Subcommand)]
 enum Commands {
-    Analyze {
-        filename: String,
-        #[arg(short, long = "print-items")]
-        print_items: bool,
-    },
-    Compare {
-        files: Vec<String>,
-    },
+    Analyze(Analyze),
+    Compare(Compare),
+}
+
+#[derive(Debug, Args)]
+struct Analyze {
+    filename: String,
+    #[arg(short, long = "print-items")]
+    print_items: bool,
+    #[arg(long, default_value = "ignored_categories.txt")]
+    ignored_categories: String,
+    #[arg(long, default_value = "true")]
+    hide_ignored: bool,
+}
+
+impl From<&Analyze> for AnalyzeOptions {
+    fn from(value: &Analyze) -> Self {
+        let ignored_categories_text =
+            fs::read_to_string(value.ignored_categories.clone()).unwrap_or_default();
+        let ignored_categories = ignored_categories_text
+            .lines()
+            .map(|l| l.to_string())
+            .collect::<HashSet<String>>();
+
+        AnalyzeOptions::new(ignored_categories, value.print_items, value.hide_ignored)
+    }
+}
+
+#[derive(Debug, Args)]
+struct Compare {
+    files: Vec<String>,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let args = Args::parse();
-    let ignored_categories_text = fs::read_to_string(args.ignored_categories).unwrap_or_default();
-    let ignored_categories = ignored_categories_text.lines().collect::<HashSet<&str>>();
+    let args = Arguments::parse();
     let mut lookup: HashMap<String, String> = get_initial_lookup(&args.lookup);
 
-    match args.command {
-        Commands::Analyze {
-            filename,
-            print_items,
-        } => {
-            let tree = Tree::load_from_file(&filename, &mut lookup)?;
-            print_tree(&tree, print_items);
-            println!("{}", TreeTotal::create_from(&tree, &ignored_categories));
+    match &args.command {
+        Commands::Analyze(analyze) => {
+            let opts: AnalyzeOptions = analyze.into();
+
+            let tree = Tree::load_from_file(&analyze.filename, &mut lookup)?;
+            let total = TreeTotal::create_from(&tree, opts.ignored_categories());
+            print_tree(&tree, &total, &opts);
+            println!("{total}");
         }
-        Commands::Compare { files } => {
+        Commands::Compare(Compare { files }) => {
             let trees = files
                 .iter()
                 .map(|f| Tree::load_from_file(f, &mut lookup).unwrap())

@@ -4,6 +4,8 @@ use derive_getters::Getters;
 
 use crate::{utils::format_with_color, Record, Tree};
 
+/// Structure to represent the total value of a `Tree`.
+/// Split up to contain both the total credits and debits.
 #[derive(Debug, Clone, Copy, Default, Getters)]
 pub struct TreeTotal {
     credits: f64,
@@ -15,7 +17,7 @@ impl TreeTotal {
         self.credits + self.debits
     }
 
-    pub fn create_from(tree: &Tree, ignored_categories: &HashSet<&str>) -> Self {
+    pub fn create_from(tree: &Tree, ignored_categories: &HashSet<String>) -> Self {
         let total = RefCell::new(TreeTotal::default());
 
         tree.preorder(|node, _| {
@@ -37,11 +39,11 @@ impl TreeTotal {
         }
     }
 
-    fn ignore_record(record: &Record, ignored_categories: &HashSet<&str>) -> bool {
+    fn ignore_record(record: &Record, ignored_categories: &HashSet<String>) -> bool {
         record
             .category()
             .as_ref()
-            .map(|c| ignored_categories.contains(c.as_str()))
+            .map(|c| ignored_categories.contains(c))
             .unwrap_or(false)
     }
 }
