@@ -1,4 +1,4 @@
-pub mod diff_tree;
+pub mod compare_tree;
 pub mod total_tree;
 
 use std::{

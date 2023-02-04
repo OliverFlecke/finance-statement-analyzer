@@ -3,7 +3,7 @@ use std::{error::Error, fs};
 use clap::{Args, Parser, Subcommand};
 use finance_analyzer::{
     tree::{
-        diff_tree::{CompareOptions, CompareTree},
+        compare_tree::{CompareOptions, CompareTree},
         total_tree::TreeTotal,
     },
     utils::{get_initial_lookup, print_tree, AnalyzeOptions, Lookup},
