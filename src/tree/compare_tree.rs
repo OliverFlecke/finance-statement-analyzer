@@ -83,6 +83,21 @@ impl<'a> CompareTree<'a> {
 
         self.output_average(f, category)?;
 
+        let average_income = self.averages.get(INCOME).copied().unwrap_or_default();
+        let percentage = self
+            .averages
+            .get(category)
+            .copied()
+            .unwrap_or_default()
+            .abs()
+            / average_income;
+        write!(
+            f,
+            "{:>width$} %",
+            format_with_color(100.0 * percentage),
+            width = COLUMN_WIDTH - 2
+        )?;
+
         let totals = self.trees.iter().map(|t| {
             t.root
                 .borrow()
@@ -118,7 +133,8 @@ impl Display for CompareTree<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // Output the name of the trees, usually indicating the month
         write!(f, "{:<HEADER_WIDTH$}", "")?;
-        write!(f, "{:>COLUMN_WIDTH$}", "Average")?;
+        write!(f, "{:>COLUMN_WIDTH$}", "Average".yellow())?;
+        write!(f, "{:>COLUMN_WIDTH$}", "Percent".yellow())?;
         for tree in self.trees {
             write!(f, "{:>COLUMN_WIDTH$}", tree.get_name().blue())?;
         }
@@ -150,6 +166,7 @@ impl Display for CompareTree<'_> {
                 self.totals.iter().map(|x| x.total()).sum::<f64>() / self.totals.len() as f64
             )
         )?;
+        write!(f, "{:COLUMN_WIDTH$}", "")?;
 
         for t in self.totals.iter() {
             write!(f, "{:>COLUMN_WIDTH$}", format_with_color(t.total()))?;
@@ -158,6 +175,7 @@ impl Display for CompareTree<'_> {
 
         // Print saved in percentage
         write!(f, "{:<HEADER_WIDTH$}", "Percentage")?;
+        write!(f, "{:COLUMN_WIDTH$}", "")?;
         write!(
             f,
             "{:>width$} %",
