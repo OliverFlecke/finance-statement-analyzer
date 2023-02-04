@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use colored::Colorize;
 use derive_new::new;
@@ -20,6 +20,7 @@ pub struct DiffTree;
 
 const HEADER_WIDTH: usize = 20;
 const COLUMN_WIDTH: usize = 10;
+const INCOME: &'static str = "Income";
 
 impl DiffTree {
     pub fn compute_diff(trees: Vec<Tree>, options: CompareOptions) {
@@ -32,6 +33,7 @@ impl DiffTree {
             })
         });
         let categories = category_set.iter().collect::<Vec<_>>();
+        let averages = Self::compute_averages(&trees, &categories);
 
         // Output the name of the trees, usually indicating the month
         print!("{:<HEADER_WIDTH$}", "");
@@ -41,12 +43,17 @@ impl DiffTree {
             .for_each(|t| print!("{:>COLUMN_WIDTH$}", t.get_name().blue()));
         println!();
 
-        Self::output_category(&trees, "Income");
+        Self::output_category(&trees, INCOME);
 
         categories
             .iter()
-            .filter(|c| c.as_str() != "Income")
-            .sorted()
+            .filter(|c| c.as_str() != INCOME)
+            .sorted_by_cached_key(|c| {
+                averages
+                    .get(c.as_str())
+                    .map(|x| x.round() as i64)
+                    .unwrap_or(0)
+            })
             .for_each(|category| {
                 Self::output_category(&trees, category);
             });
@@ -130,5 +137,32 @@ impl DiffTree {
             .sum::<f64>()
             / trees.len() as f64;
         print!("{:>COLUMN_WIDTH$}", format_with_color(average));
+    }
+
+    fn compute_averages<'a>(
+        trees: &Vec<Tree>,
+        categories: &'a Vec<&'a String>,
+    ) -> HashMap<&'a str, f64> {
+        categories
+            .iter()
+            .map(|category| {
+                let avg = trees
+                    .iter()
+                    .map(|t| {
+                        t.root
+                            .borrow()
+                            .children
+                            .get(*category)
+                            .map(|n| n.borrow().total())
+                            .unwrap_or(0.0)
+                    })
+                    .sum::<f64>()
+                    / trees.len() as f64;
+                (category, avg)
+            })
+            .fold(HashMap::default(), |mut map, (c, avg)| {
+                map.insert(c, avg);
+                map
+            })
     }
 }
