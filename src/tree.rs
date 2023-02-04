@@ -15,10 +15,30 @@ use crate::{calc::get_category, Record};
 /// Represents the tree structure of expenses and income.
 #[derive(Debug, Default)]
 pub struct Tree {
+    name: String,
     root: RefCell<Node>,
 }
 
 impl Tree {
+    fn new(name: String) -> Self {
+        Self {
+            name,
+            root: RefCell::default(),
+        }
+    }
+
+    fn extract_name_from_file(filename: impl AsRef<str>) -> String {
+        filename
+            .as_ref()
+            .split("/")
+            .last()
+            .unwrap_or_default()
+            .split("_")
+            .next()
+            .unwrap_or_default()
+            .to_string()
+    }
+
     /// Load a tree from a file, and use the lookup to assign categories to the lines.
     /// This will interatively ask the user for categories if none can be found in the provided lookup.
     pub fn load_from_file(
@@ -30,7 +50,7 @@ impl Tree {
         let mut reader = csv::Reader::from_path(filename.as_ref())?;
         let mut writer = csv::Writer::from_path(&tmp)?;
 
-        let tree = Tree::default();
+        let tree = Self::new(Self::extract_name_from_file(filename.as_ref()));
 
         for result in reader.deserialize() {
             let mut record: Record = result?;
@@ -59,6 +79,10 @@ impl Tree {
 
     pub fn get_root(&self) -> &RefCell<Node> {
         &self.root
+    }
+
+    pub fn get_name(&self) -> &String {
+        &self.name
     }
 
     pub fn preorder<F>(&self, action: F)

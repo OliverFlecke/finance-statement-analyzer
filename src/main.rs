@@ -71,6 +71,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
             let tree = Tree::load_from_file(&analyze.filename, &mut lookup)?;
             let total = TreeTotal::create_from(&tree, opts.ignored_categories());
+
+            println!("Details for: {}", tree.get_name());
             print_tree(&tree, &total, &opts);
             println!("{total}");
         }
