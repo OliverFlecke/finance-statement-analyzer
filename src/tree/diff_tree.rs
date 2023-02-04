@@ -1,82 +1,88 @@
-// use std::{cell::RefCell, collections::HashMap, io::Split, rc::Rc};
-
 use std::collections::HashSet;
+
+use colored::Colorize;
+use itertools::Itertools;
 
 use crate::{utils::format_with_color, Tree};
 
-// #[derive(Debug, Default)]
-// pub struct DiffNode {
-//     category: String,
-//     values: Vec<f64>,
-//     children: HashMap<String, Rc<RefCell<DiffNode>>>,
-// }
-
-// impl DiffNode {
-//     fn insert(root: &RefCell<DiffNode>, category: String, values: Vec<f64>) {
-//         fn helper(node: &RefCell<DiffNode>, values: Vec<f64>, mut splits: Split<char>) {
-//             if let Some(cat) = splits.next() {
-//                 let child = node
-//                     .borrow()
-//                     .children
-//                     .entry(cat.to_string())
-//                     .or_insert_with(|| Rc::new(RefCell::new(DiffNode::new(cat.to_string()))));
-//             }
-//         }
-//         todo!()
-//     }
-// }
-
 #[derive(Debug, Default)]
-pub struct DiffTree {
-    // root: RefCell<DiffNode>,
-}
+pub struct DiffTree;
 
 impl DiffTree {
     pub fn compute_diff(trees: Vec<Tree>) {
         let mut category_set = HashSet::new();
         trees.iter().for_each(|t| {
             t.root.borrow().children.keys().for_each(|c| {
-                category_set.insert(c.clone());
+                if !category_set.contains(c) {
+                    category_set.insert(c.clone());
+                }
             })
         });
         let categories = category_set.iter().collect::<Vec<_>>();
 
-        for category in categories {
-            print!("{category:<20}");
+        // Output the name of the trees, usually indicating the month
+        print!("{:<20}", "");
+        print!("{:>10}", "Average");
+        trees
+            .iter()
+            .for_each(|t| print!("{:>10}", t.get_name().blue()));
+        println!();
 
-            trees
-                .iter()
-                .map(|t| {
-                    t.root
-                        .borrow()
-                        .children
-                        .get(category)
-                        .map(|n| n.borrow().total())
-                        .unwrap_or(0.0)
-                })
-                .for_each(|total| print!("{:>10}", format_with_color(total)));
+        Self::output_category(&trees, "Income");
 
-            println!();
+        categories
+            .iter()
+            .filter(|c| c.as_str() != "Income")
+            .sorted()
+            .for_each(|category| {
+                Self::output_category(&trees, category);
+            });
+    }
 
-            // let left_total = l.borrow().total();
-            // let right_total = right
-            //     .root
-            //     .borrow()
-            //     .children
-            //     .get(&category)
-            //     .map(|n| n.borrow().total())
-            //     .unwrap_or(0.0);
+    fn output_category(trees: &Vec<Tree>, category: &str) {
+        print!("{category:<20}");
 
-            // // DiffNode::insert(&out.root, category, vec![left_total, right_total]);
+        Self::output_average(&trees, category);
 
-            // println!(
-            //     "{:<20} Left: {:>10} \tright: {:>10}, diff: {:>10}",
-            //     category,
-            //     format_with_color(left_total),
-            //     format_with_color(right_total),
-            //     format_with_color(right_total - left_total)
-            // );
-        }
+        trees
+            .iter()
+            .map(|t| {
+                t.root
+                    .borrow()
+                    .children
+                    .get(category)
+                    .map(|n| n.borrow().total())
+                    .unwrap_or(0.0)
+            })
+            .for_each(|total| {
+                print!(
+                    "{:>10}",
+                    if total == 0.0 {
+                        "0".green()
+                    } else {
+                        format_with_color(total)
+                    }
+                )
+            });
+
+        println!();
+    }
+
+    /// Calculate the average for the give category and output it to the console.
+    fn output_average(trees: &Vec<Tree>, category: &str) {
+        let average = trees
+            .iter()
+            .map(|t| {
+                t.root
+                    .borrow()
+                    .children
+                    .get(category)
+                    .map(|n| n.borrow().total())
+                    .unwrap_or(0.0)
+            })
+            .sum::<f64>()
+            / trees.len() as f64;
+        print!("{:>10}", format_with_color(average));
     }
 }
 

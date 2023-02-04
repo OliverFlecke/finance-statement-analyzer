@@ -30,10 +30,10 @@ impl Tree {
     fn extract_name_from_file(filename: impl AsRef<str>) -> String {
         filename
             .as_ref()
-            .split("/")
+            .split('/')
             .last()
             .unwrap_or_default()
-            .split("_")
+            .split('_')
             .next()
             .unwrap_or_default()
             .to_string()
