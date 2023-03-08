@@ -13,6 +13,7 @@ use crate::{
     Tree,
 };
 
+const DAYS_IN_MONTH: usize = 30;
 const HEADER_WIDTH: usize = 20;
 const COLUMN_WIDTH: usize = 10;
 const INCOME: &str = "Income";
@@ -82,21 +83,8 @@ impl<'a> CompareTree<'a> {
         write!(f, "{category:<HEADER_WIDTH$}")?;
 
         self.output_average(f, category)?;
-
-        let average_income = self.averages.get(INCOME).copied().unwrap_or_default();
-        let percentage = self
-            .averages
-            .get(category)
-            .copied()
-            .unwrap_or_default()
-            .abs()
-            / average_income;
-        write!(
-            f,
-            "{:>width$} %",
-            format_with_color(100.0 * percentage),
-            width = COLUMN_WIDTH - 2
-        )?;
+        self.output_average_per_day(f, category)?;
+        self.output_percentage(f, category)?;
 
         let totals = self.trees.iter().map(|t| {
             t.root
@@ -127,14 +115,54 @@ impl<'a> CompareTree<'a> {
         write!(f, "{:>COLUMN_WIDTH$}", format_with_color(average))?;
         Ok(())
     }
+
+    fn output_average_per_day(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+        category: &str,
+    ) -> std::fmt::Result {
+        let average_per_day = self
+            .averages
+            .get(category)
+            .map(|x| *x / DAYS_IN_MONTH as f64)
+            .unwrap_or_default();
+        write!(f, "{:>COLUMN_WIDTH$}", format_with_color(average_per_day))?;
+        Ok(())
+    }
+
+    fn output_percentage(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+        category: &str,
+    ) -> std::fmt::Result {
+        let average_income = self.averages.get(INCOME).copied().unwrap_or_default();
+        let percentage = self
+            .averages
+            .get(category)
+            .copied()
+            .unwrap_or_default()
+            .abs()
+            / average_income;
+        write!(
+            f,
+            "{:>width$} %",
+            format_with_color(100.0 * percentage),
+            width = COLUMN_WIDTH - 2
+        )?;
+        Ok(())
+    }
 }
 
 impl Display for CompareTree<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // Output the name of the trees, usually indicating the month
         write!(f, "{:<HEADER_WIDTH$}", "")?;
-        write!(f, "{:>COLUMN_WIDTH$}", "Average".yellow())?;
-        write!(f, "{:>COLUMN_WIDTH$}", "Percent".yellow())?;
+
+        let special_headers = vec!["Average", "Per day", "Percent"];
+        for header in special_headers {
+            write!(f, "{:>COLUMN_WIDTH$}", header.yellow())?;
+        }
+
         for tree in self.trees {
             write!(f, "{:>COLUMN_WIDTH$}", tree.get_name().blue())?;
         }
