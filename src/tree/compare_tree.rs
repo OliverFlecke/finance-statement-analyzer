@@ -187,12 +187,12 @@ impl Display for CompareTree<'_> {
         // Output amount saved this period
         writeln!(f)?;
         write!(f, "{:<HEADER_WIDTH$}", "Saved")?;
+        let total = self.totals.iter().map(|x| x.total()).sum::<f64>() / self.totals.len() as f64;
+        write!(f, "{:>COLUMN_WIDTH$}", format_with_color(total))?;
         write!(
             f,
             "{:>COLUMN_WIDTH$}",
-            format_with_color(
-                self.totals.iter().map(|x| x.total()).sum::<f64>() / self.totals.len() as f64
-            )
+            format_with_color(total / DAYS_IN_MONTH as f64)
         )?;
         write!(f, "{:COLUMN_WIDTH$}", "")?;
 
@@ -203,6 +203,7 @@ impl Display for CompareTree<'_> {
 
         // Print saved in percentage
         write!(f, "{:<HEADER_WIDTH$}", "Percentage")?;
+        write!(f, "{:COLUMN_WIDTH$}", "")?;
         write!(f, "{:COLUMN_WIDTH$}", "")?;
         write!(
             f,
