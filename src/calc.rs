@@ -18,13 +18,9 @@ pub fn get_category(
     }
 
     print!(
-        "{}",
-        format!(
-            "Category missing for {} - {}. Enter new category: ",
-            record.date(),
-            record.description()
-        )
-        .yellow()
+        "Category missing for {} - {}. Enter new category: ",
+        record.date().cyan(),
+        record.description().green(),
     );
     io::stdout().flush()?;
 

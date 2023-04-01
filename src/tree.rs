@@ -93,7 +93,6 @@ impl Tree {
             .borrow()
             .children
             .values()
-            .into_iter()
             .for_each(|n| Node::preorder(n, action, 0));
     }
 
@@ -234,7 +233,6 @@ impl Node {
         root.borrow()
             .children
             .values()
-            .into_iter()
             .for_each(|n| Self::preorder(n, action, depth + 1));
     }
 
