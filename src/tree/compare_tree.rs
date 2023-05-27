@@ -17,6 +17,7 @@ const DAYS_IN_MONTH: usize = 30;
 const HEADER_WIDTH: usize = 20;
 const COLUMN_WIDTH: usize = 10;
 const INCOME: &str = "Income";
+const HOME: &str = "Home";
 
 #[derive(Debug, Clone, new)]
 pub struct CompareOptions {
@@ -228,6 +229,28 @@ impl Display for CompareTree<'_> {
                 .as_slice(),
         )?;
 
+        // Output spent amount *excluding* the home category
+        self.write_summary_row(
+            f,
+            "Spent without home",
+            self.totals
+                .iter()
+                .zip(self.trees.iter())
+                .map(|(total, tree)| {
+                    total.debits()
+                        - tree
+                            .get_root()
+                            .borrow()
+                            .children
+                            .get(HOME)
+                            .expect("there always to be a `Home` category")
+                            .borrow()
+                            .total()
+                })
+                .collect::<Vec<f64>>()
+                .as_slice(),
+        )?;
+
         // Output amount saved this period
         self.write_summary_row(
             f,
@@ -240,7 +263,7 @@ impl Display for CompareTree<'_> {
         )?;
 
         // Print saved in percentage
-        write!(f, "{:<HEADER_WIDTH$}", "Percentage")?;
+        write!(f, "{:<HEADER_WIDTH$}", "Percentage saved")?;
         write!(f, "{:COLUMN_WIDTH$}", "")?;
         write!(f, "{:COLUMN_WIDTH$}", "")?;
         write!(
