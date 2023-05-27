@@ -22,6 +22,7 @@ const HOME: &str = "Home";
 #[derive(Debug, Clone, new)]
 pub struct CompareOptions {
     ignored_categories: IgnoredCategories,
+    hide_ignored_categories: bool,
 }
 
 #[derive(Debug)]
@@ -30,6 +31,7 @@ pub struct CompareTree<'a> {
     categories: HashSet<String>,
     totals: Vec<TreeTotal>,
     averages: HashMap<String, f64>,
+    options: CompareOptions,
 }
 
 impl<'a> CompareTree<'a> {
@@ -53,6 +55,7 @@ impl<'a> CompareTree<'a> {
             categories,
             totals,
             averages,
+            options,
         }
     }
 
@@ -207,6 +210,10 @@ impl Display for CompareTree<'_> {
             .categories
             .iter()
             .filter(|c| c.as_str() != INCOME)
+            .filter(|c| {
+                !self.options.hide_ignored_categories
+                    || !self.options.ignored_categories.contains(c)
+            })
             .sorted_by_cached_key(|c| {
                 self.averages
                     .get(c.as_str())

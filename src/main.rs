@@ -53,6 +53,8 @@ struct Compare {
     files: Vec<String>,
     #[arg(long, default_value = "ignored_categories.txt")]
     ignored_categories: String,
+    #[arg(short = 'H', long, default_value = "false")]
+    hide_ignored_categories: bool,
 }
 
 impl Compare {
@@ -66,7 +68,10 @@ impl Compare {
 
 impl From<&Compare> for CompareOptions {
     fn from(value: &Compare) -> Self {
-        CompareOptions::new(value.ignored_categories.as_str().into())
+        CompareOptions::new(
+            value.ignored_categories.as_str().into(),
+            value.hide_ignored_categories,
+        )
     }
 }
 
