@@ -151,6 +151,38 @@ impl<'a> CompareTree<'a> {
         )?;
         Ok(())
     }
+
+    fn write_summary_row(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+        title: &str,
+        values: &[f64],
+    ) -> std::fmt::Result {
+        write!(f, "{title:<HEADER_WIDTH$}")?;
+
+        let total = values.iter().sum::<f64>() / values.len() as f64;
+        write!(f, "{:>COLUMN_WIDTH$}", format_with_color(total))?;
+        write!(
+            f,
+            "{:>COLUMN_WIDTH$}",
+            format_with_color(total / DAYS_IN_MONTH as f64)
+        )?;
+
+        let average_income = self.averages.get(INCOME).copied().unwrap_or_default();
+        write!(
+            f,
+            "{:>width$} %",
+            format_with_color(100.0 * (total / average_income)),
+            width = COLUMN_WIDTH - 2,
+        )?;
+
+        for value in values.iter() {
+            write!(f, "{:>COLUMN_WIDTH$}", format_with_color(*value))?;
+        }
+        writeln!(f)?;
+
+        Ok(())
+    }
 }
 
 impl Display for CompareTree<'_> {
@@ -164,7 +196,7 @@ impl Display for CompareTree<'_> {
         }
 
         for tree in self.trees {
-            write!(f, "{:>COLUMN_WIDTH$}", tree.get_name().blue())?;
+            write!(f, "{:>COLUMN_WIDTH$}", tree.get_name().cyan())?;
         }
         writeln!(f)?;
 
@@ -183,23 +215,29 @@ impl Display for CompareTree<'_> {
         for category in sorted_categories {
             self.output_category(f, category)?;
         }
+        writeln!(f)?;
+
+        // Output spent amount
+        self.write_summary_row(
+            f,
+            "Spent",
+            self.totals
+                .iter()
+                .map(|x| *x.debits())
+                .collect::<Vec<f64>>()
+                .as_slice(),
+        )?;
 
         // Output amount saved this period
-        writeln!(f)?;
-        write!(f, "{:<HEADER_WIDTH$}", "Saved")?;
-        let total = self.totals.iter().map(|x| x.total()).sum::<f64>() / self.totals.len() as f64;
-        write!(f, "{:>COLUMN_WIDTH$}", format_with_color(total))?;
-        write!(
+        self.write_summary_row(
             f,
-            "{:>COLUMN_WIDTH$}",
-            format_with_color(total / DAYS_IN_MONTH as f64)
+            "Saved",
+            self.totals
+                .iter()
+                .map(|x| x.total())
+                .collect::<Vec<f64>>()
+                .as_slice(),
         )?;
-        write!(f, "{:COLUMN_WIDTH$}", "")?;
-
-        for t in self.totals.iter() {
-            write!(f, "{:>COLUMN_WIDTH$}", format_with_color(t.total()))?;
-        }
-        writeln!(f)?;
 
         // Print saved in percentage
         write!(f, "{:<HEADER_WIDTH$}", "Percentage")?;
