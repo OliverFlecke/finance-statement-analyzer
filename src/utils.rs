@@ -6,15 +6,17 @@ use colored::{ColoredString, Colorize};
 use derive_getters::Getters;
 use derive_new::new;
 
-use crate::tree::total_tree::TreeTotal;
-use crate::Tree;
+use crate::{tree::total_tree::TreeTotal, Tree, PRECISION};
 
 use self::ignored_categories::IgnoredCategories;
 
 /// Format an amount with a persision of two digits and with a color indicating
 /// whether it is positive or negative
 pub fn format_with_color(value: f64) -> ColoredString {
-    let s = format!("{value:.2}");
+    let s = format!(
+        "{value:.precision$}",
+        precision = *PRECISION.read().unwrap()
+    );
 
     if value.is_sign_positive() {
         s.green()

@@ -7,7 +7,7 @@ use finance_analyzer::{
         total_tree::TreeTotal,
     },
     utils::{get_initial_lookup, print_tree, AnalyzeOptions, Lookup},
-    Tree,
+    Tree, PRECISION,
 };
 
 #[derive(Debug, Parser)]
@@ -16,6 +16,8 @@ struct Arguments {
     command: Commands,
     #[arg(short, long, default_value = "lookup.json")]
     lookup: String,
+    #[arg(short, long = "precision", default_value = "0")]
+    precision: usize,
 }
 
 #[derive(Debug, Subcommand)]
@@ -78,6 +80,7 @@ impl From<&Compare> for CompareOptions {
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Arguments::parse();
     let mut lookup: Lookup = get_initial_lookup(&args.lookup);
+    *PRECISION.write().unwrap() = args.precision;
 
     match &args.command {
         Commands::Analyze(analyze) => {
