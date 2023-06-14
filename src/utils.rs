@@ -5,6 +5,7 @@ use std::{collections::HashMap, fs::File};
 use colored::{ColoredString, Colorize};
 use derive_getters::Getters;
 use derive_new::new;
+use rust_decimal::{prelude::ToPrimitive, Decimal};
 
 use crate::{tree::total_tree::TreeTotal, Tree, PRECISION};
 
@@ -12,7 +13,7 @@ use self::ignored_categories::IgnoredCategories;
 
 /// Format an amount with a persision of two digits and with a color indicating
 /// whether it is positive or negative
-pub fn format_with_color(value: f64) -> ColoredString {
+pub fn format_with_color(value: Decimal) -> ColoredString {
     let s = format!(
         "{value:.precision$}",
         precision = *PRECISION.read().unwrap()
@@ -64,7 +65,7 @@ pub fn print_tree(tree: &Tree, total_tree: &TreeTotal, opts: &AnalyzeOptions) {
                 format_with_color(n.total())
             };
 
-            let percentage = 100.0 * (n.total() / total_tree.credits()).abs();
+            let percentage = Decimal::ONE_HUNDRED * (n.total() / total_tree.credits()).abs();
 
             println!(
                 // Alignment formatting. Using < to align front, and > to align end.
@@ -80,7 +81,7 @@ pub fn print_tree(tree: &Tree, total_tree: &TreeTotal, opts: &AnalyzeOptions) {
             if opts.print_items {
                 // Print records
                 n.get_records()
-                    .fold(HashMap::<&String, f64>::new(), |mut acc, x| {
+                    .fold(HashMap::<&String, Decimal>::new(), |mut acc, x| {
                         acc.entry(x.description())
                             .and_modify(|amount| *amount += x.get_amount())
                             .or_insert(x.get_amount());
@@ -98,6 +99,6 @@ pub fn print_tree(tree: &Tree, total_tree: &TreeTotal, opts: &AnalyzeOptions) {
                     });
             }
         },
-        |n| n.total().floor() as i64,
+        |n| n.total().floor().to_i64().expect("always an integer"),
     );
 }

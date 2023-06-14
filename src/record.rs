@@ -1,4 +1,5 @@
 use derive_getters::Getters;
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
 #[cfg(test)]
@@ -13,10 +14,10 @@ pub struct Record {
     date: String,
     #[serde(rename = "Transaction Description")]
     description: String,
-    #[serde(rename = "Debit Amount")]
-    debit_amount: Option<f64>,
-    #[serde(rename = "Credit Amount")]
-    credit_amount: Option<f64>,
+    #[serde(rename = "Debit Amount", with = "rust_decimal::serde::float_option")]
+    debit_amount: Option<Decimal>,
+    #[serde(rename = "Credit Amount", with = "rust_decimal::serde::float_option")]
+    credit_amount: Option<Decimal>,
     #[serde(rename = "Balance")]
     balance: String,
     #[serde(rename = "Category")]
@@ -24,11 +25,11 @@ pub struct Record {
 }
 
 impl Record {
-    pub fn get_amount(&self) -> f64 {
+    pub fn get_amount(&self) -> Decimal {
         self.debit_amount
             .map(|x| -x)
             .or(self.credit_amount)
-            .unwrap_or(0.0)
+            .unwrap_or(Decimal::ZERO)
     }
 
     pub fn set_category(&mut self, category: String) {

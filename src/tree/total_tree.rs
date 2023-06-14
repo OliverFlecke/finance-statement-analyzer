@@ -1,6 +1,7 @@
 use std::{cell::RefCell, fmt::Display};
 
 use derive_getters::Getters;
+use rust_decimal::Decimal;
 
 use crate::{
     utils::{format_with_color, ignored_categories::IgnoredCategories},
@@ -11,17 +12,17 @@ use crate::{
 /// Split up to contain both the total credits and debits.
 #[derive(Debug, Clone, Copy, Default, Getters)]
 pub struct TreeTotal {
-    credits: f64,
-    debits: f64,
+    credits: Decimal,
+    debits: Decimal,
 }
 
 impl TreeTotal {
-    pub fn total(&self) -> f64 {
+    pub fn total(&self) -> Decimal {
         self.credits + self.debits
     }
 
-    pub fn percentage_saved(&self) -> f64 {
-        100.0 * (self.total() / self.credits())
+    pub fn percentage_saved(&self) -> Decimal {
+        Decimal::ONE_HUNDRED * (self.total() / self.credits())
     }
 
     pub fn create_from(tree: &Tree, ignored_categories: &IgnoredCategories) -> Self {
@@ -38,7 +39,7 @@ impl TreeTotal {
         total.into_inner()
     }
 
-    fn add(&mut self, amount: f64) {
+    fn add(&mut self, amount: Decimal) {
         if amount.is_sign_positive() {
             self.credits += amount;
         } else {
@@ -63,7 +64,7 @@ impl Display for TreeTotal {
         write!(
             f,
             "\tPercentage saved: {} %",
-            format_with_color(100.0 * (self.total() / self.credits))
+            format_with_color(Decimal::ONE_HUNDRED * (self.total() / self.credits))
         )?;
 
         Ok(())

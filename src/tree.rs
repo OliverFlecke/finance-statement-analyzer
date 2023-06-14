@@ -10,6 +10,8 @@ use std::{
     str::Split,
 };
 
+use rust_decimal::Decimal;
+
 use crate::{calc::get_category, utils::Lookup, Record};
 
 /// Represents the tree structure of expenses and income.
@@ -172,12 +174,12 @@ impl Node {
         &self.category
     }
 
-    pub fn total(&self) -> f64 {
+    pub fn total(&self) -> Decimal {
         self.children
             .values()
             .map(|c| c.borrow().total())
-            .sum::<f64>()
-            + self.records.iter().map(|r| r.get_amount()).sum::<f64>()
+            .sum::<Decimal>()
+            + self.records.iter().map(|r| r.get_amount()).sum::<Decimal>()
     }
 
     pub fn for_each<F>(&self, f: F)

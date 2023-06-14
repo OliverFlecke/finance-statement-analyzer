@@ -1,16 +1,15 @@
-use std::{
-    collections::{HashMap, HashSet},
-    fmt::Display,
-};
-
-use colored::Colorize;
-use derive_new::new;
-use itertools::Itertools;
-
 use crate::{
     tree::total_tree::TreeTotal,
     utils::{format_with_color, ignored_categories::IgnoredCategories},
     Tree,
+};
+use colored::Colorize;
+use derive_new::new;
+use itertools::Itertools;
+use rust_decimal::{prelude::*, Decimal};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::Display,
 };
 
 const DAYS_IN_MONTH: usize = 30;
@@ -30,7 +29,7 @@ pub struct CompareTree<'a> {
     trees: &'a Vec<Tree>,
     categories: HashSet<String>,
     totals: Vec<TreeTotal>,
-    averages: HashMap<String, f64>,
+    averages: HashMap<String, Decimal>,
     options: CompareOptions,
 }
 
@@ -59,7 +58,10 @@ impl<'a> CompareTree<'a> {
         }
     }
 
-    fn compute_averages(trees: &Vec<Tree>, categories: &HashSet<String>) -> HashMap<String, f64> {
+    fn compute_averages(
+        trees: &Vec<Tree>,
+        categories: &HashSet<String>,
+    ) -> HashMap<String, Decimal> {
         categories
             .iter()
             .map(|category| {
@@ -71,10 +73,10 @@ impl<'a> CompareTree<'a> {
                             .children
                             .get(category)
                             .map(|n| n.borrow().total())
-                            .unwrap_or(0.0)
+                            .unwrap_or(Decimal::ZERO)
                     })
-                    .sum::<f64>()
-                    / trees.len() as f64;
+                    .sum::<Decimal>()
+                    / Decimal::from(trees.len());
                 (category, avg)
             })
             .fold(HashMap::default(), |mut map, (c, avg)| {
@@ -96,13 +98,13 @@ impl<'a> CompareTree<'a> {
                 .children
                 .get(category)
                 .map(|n| n.borrow().total())
-                .unwrap_or(0.0)
+                .unwrap_or(Decimal::ZERO)
         });
         for total in totals {
             write!(
                 f,
                 "{:>COLUMN_WIDTH$}",
-                if total == 0.0 {
+                if total == Decimal::ZERO {
                     "0".green()
                 } else {
                     format_with_color(total)
@@ -128,7 +130,7 @@ impl<'a> CompareTree<'a> {
         let average_per_day = self
             .averages
             .get(category)
-            .map(|x| *x / DAYS_IN_MONTH as f64)
+            .map(|x| *x / Decimal::from(DAYS_IN_MONTH))
             .unwrap_or_default();
         write!(f, "{:>COLUMN_WIDTH$}", format_with_color(average_per_day))?;
         Ok(())
@@ -150,7 +152,7 @@ impl<'a> CompareTree<'a> {
         write!(
             f,
             "{:>width$} %",
-            format_with_color(100.0 * percentage),
+            format_with_color(Decimal::ONE_HUNDRED * percentage),
             width = COLUMN_WIDTH - 2
         )?;
         Ok(())
@@ -160,23 +162,23 @@ impl<'a> CompareTree<'a> {
         &self,
         f: &mut std::fmt::Formatter<'_>,
         title: &str,
-        values: &[f64],
+        values: &[Decimal],
     ) -> std::fmt::Result {
         write!(f, "{title:<HEADER_WIDTH$}")?;
 
-        let total = values.iter().sum::<f64>() / values.len() as f64;
+        let total = values.iter().sum::<Decimal>() / Decimal::from(values.len());
         write!(f, "{:>COLUMN_WIDTH$}", format_with_color(total))?;
         write!(
             f,
             "{:>COLUMN_WIDTH$}",
-            format_with_color(total / DAYS_IN_MONTH as f64)
+            format_with_color(total / Decimal::from(DAYS_IN_MONTH))
         )?;
 
         let average_income = self.averages.get(INCOME).copied().unwrap_or_default();
         write!(
             f,
             "{:>width$} %",
-            format_with_color(100.0 * (total / average_income)),
+            format_with_color(Decimal::ONE_THOUSAND * (total / average_income)),
             width = COLUMN_WIDTH - 2,
         )?;
 
@@ -217,7 +219,7 @@ impl Display for CompareTree<'_> {
             .sorted_by_cached_key(|c| {
                 self.averages
                     .get(c.as_str())
-                    .map(|x| x.round() as i64)
+                    .map(|x| x.round().to_i64().expect("always a valid integer"))
                     .unwrap_or(0)
             });
         for category in sorted_categories {
@@ -232,7 +234,7 @@ impl Display for CompareTree<'_> {
             self.totals
                 .iter()
                 .map(|x| *x.debits())
-                .collect::<Vec<f64>>()
+                .collect::<Vec<Decimal>>()
                 .as_slice(),
         )?;
 
@@ -254,7 +256,7 @@ impl Display for CompareTree<'_> {
                             .borrow()
                             .total()
                 })
-                .collect::<Vec<f64>>()
+                .collect::<Vec<Decimal>>()
                 .as_slice(),
         )?;
 
@@ -265,7 +267,7 @@ impl Display for CompareTree<'_> {
             self.totals
                 .iter()
                 .map(|x| x.total())
-                .collect::<Vec<f64>>()
+                .collect::<Vec<Decimal>>()
                 .as_slice(),
         )?;
 
@@ -280,8 +282,8 @@ impl Display for CompareTree<'_> {
                 self.totals
                     .iter()
                     .map(|t| t.percentage_saved())
-                    .sum::<f64>()
-                    / self.totals.len() as f64
+                    .sum::<Decimal>()
+                    / Decimal::from(self.totals.len())
             ),
             width = COLUMN_WIDTH - 2
         )?;
@@ -289,7 +291,7 @@ impl Display for CompareTree<'_> {
             write!(
                 f,
                 "{:>width$} %",
-                format_with_color(100.0 * (t.total() / t.credits())),
+                format_with_color(Decimal::ONE_HUNDRED * (t.total() / t.credits())),
                 width = COLUMN_WIDTH - 2
             )?;
         }

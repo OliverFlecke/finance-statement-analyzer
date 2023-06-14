@@ -13,7 +13,8 @@ colored = "2.0.0"
 itertools = "0.10.5"
 derive-new = "0.5.9"
 lazy_static = "1.4.0"
+rust_decimal = { version = "1.29.1", features = ["serde-with-float"] }
 
 [dev-dependencies]
-fake = { version = "2.5.0", features = ["derive"] }
+fake = { version = "2.5.0", features = ["derive", "rust_decimal"] }
 rand = "0.8.5"
