@@ -1,23 +1,18 @@
 pub mod ignored_categories;
-
-use std::{collections::HashMap, fs::File};
-
+use self::ignored_categories::IgnoredCategories;
+use crate::{tree::total_tree::TreeTotal, Tree, PRECISION};
 use colored::{ColoredString, Colorize};
 use derive_getters::Getters;
 use derive_new::new;
 use rust_decimal::{prelude::ToPrimitive, Decimal};
-
-use crate::{tree::total_tree::TreeTotal, Tree, PRECISION};
-
-use self::ignored_categories::IgnoredCategories;
+use std::{collections::HashMap, fs::File};
 
 /// Format an amount with a persision of two digits and with a color indicating
 /// whether it is positive or negative
 pub fn format_with_color(value: Decimal) -> ColoredString {
-    let s = format!(
-        "{value:.precision$}",
-        precision = *PRECISION.read().unwrap()
-    );
+    let precision = *PRECISION.read().unwrap();
+    let value = value.round_dp(precision as u32);
+    let s = format!("{value:.precision$}");
 
     if value.is_sign_positive() {
         s.green()
