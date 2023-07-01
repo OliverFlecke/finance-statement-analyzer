@@ -1,4 +1,6 @@
+pub mod analyze;
 pub mod calc;
+pub mod compare;
 pub mod merge;
 pub(crate) mod record;
 pub mod tree;
