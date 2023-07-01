@@ -18,8 +18,8 @@ pub struct Record {
     debit_amount: Option<Decimal>,
     #[serde(rename = "Credit Amount", with = "rust_decimal::serde::float_option")]
     credit_amount: Option<Decimal>,
-    #[serde(rename = "Balance")]
-    balance: String,
+    // #[serde(rename = "Balance")]
+    // balance: String,
     #[serde(rename = "Category")]
     category: Option<String>,
 }
@@ -34,5 +34,26 @@ impl Record {
 
     pub fn set_category(&mut self, category: String) {
         self.category = Some(category);
+    }
+}
+
+#[cfg_attr(test, derive(Dummy, derive_new::new))]
+#[derive(Debug, Deserialize, Serialize, Getters, Clone, PartialEq)]
+#[serde(rename_all = "PascalCase")]
+pub struct CreditRecord {
+    date: String,
+    description: String,
+    amount: Decimal,
+}
+
+impl From<CreditRecord> for Record {
+    fn from(val: CreditRecord) -> Self {
+        Self {
+            date: val.date,
+            description: val.description,
+            debit_amount: Some(val.amount),
+            credit_amount: None,
+            category: None,
+        }
     }
 }

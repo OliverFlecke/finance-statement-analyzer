@@ -2,6 +2,7 @@ use std::{error::Error, fs};
 
 use clap::{Args, Parser, Subcommand};
 use finance_analyzer::{
+    merge::{self, MergeArgs},
     tree::{
         compare_tree::{CompareOptions, CompareTree},
         total_tree::TreeTotal,
@@ -20,12 +21,15 @@ struct Arguments {
     precision: usize,
 }
 
+/// Top level commands
 #[derive(Debug, Subcommand)]
 enum Commands {
     Analyze(Analyze),
     Compare(Compare),
+    Merge(MergeArgs),
 }
 
+/// Arguments for analyzing a CSV file with the finance statements.
 #[derive(Debug, Args)]
 struct Analyze {
     filename: String,
@@ -50,6 +54,7 @@ impl From<&Analyze> for AnalyzeOptions {
     }
 }
 
+/// Arguments for comparing multiple of files.
 #[derive(Debug, Args)]
 struct Compare {
     files: Vec<String>,
@@ -77,6 +82,7 @@ impl From<&Compare> for CompareOptions {
     }
 }
 
+/// Entrypoint
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Arguments::parse();
     let mut lookup: Lookup = get_initial_lookup(&args.lookup);
@@ -98,6 +104,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             let compare_tree = CompareTree::new(&trees, compare.into());
             println!("{compare_tree}");
         }
+        Commands::Merge(args) => merge::run(args)?,
     };
 
     // Save lookup dictionary

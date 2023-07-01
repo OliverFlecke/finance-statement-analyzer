@@ -1,4 +1,5 @@
 pub mod calc;
+pub mod merge;
 pub(crate) mod record;
 pub mod tree;
 pub mod utils;
