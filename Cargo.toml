@@ -16,5 +16,6 @@ lazy_static = "1.4.0"
 rust_decimal = { version = "1.29.1", features = ["serde-with-float"] }
 
 [dev-dependencies]
-fake = { version = "2.5.0", features = ["derive", "rust_decimal"] }
+chrono = "0.4.28"
+fake = { version = "2.5.0", features = ["derive", "rust_decimal", "chrono"] }
 rand = "0.8.5"
