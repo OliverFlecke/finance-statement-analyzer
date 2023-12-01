@@ -22,6 +22,7 @@ const HOME: &str = "Home";
 pub struct CompareOptions {
     ignored_categories: IgnoredCategories,
     hide_ignored_categories: bool,
+    number_of_columns: usize,
 }
 
 #[derive(Debug)]
@@ -92,14 +93,20 @@ impl<'a> CompareTree<'a> {
         self.output_average_per_day(f, category)?;
         self.output_percentage(f, category)?;
 
-        let totals = self.trees.iter().map(|t| {
-            t.root
-                .borrow()
-                .children
-                .get(category)
-                .map(|n| n.borrow().total())
-                .unwrap_or(Decimal::ZERO)
-        });
+        let totals = self
+            .trees
+            .iter()
+            .map(|t| {
+                t.root
+                    .borrow()
+                    .children
+                    .get(category)
+                    .map(|n| n.borrow().total())
+                    .unwrap_or(Decimal::ZERO)
+            })
+            .rev()
+            .take(self.options.number_of_columns)
+            .rev();
         for total in totals {
             write!(
                 f,
@@ -201,7 +208,14 @@ impl Display for CompareTree<'_> {
             write!(f, "{:>COLUMN_WIDTH$}", header.yellow())?;
         }
 
-        for tree in self.trees {
+        // Writes the name for each part of the three, which is the month.
+        for tree in self
+            .trees
+            .iter()
+            .rev()
+            .take(self.options.number_of_columns)
+            .rev()
+        {
             write!(f, "{:>COLUMN_WIDTH$}", tree.get_name().cyan())?;
         }
         writeln!(f)?;
@@ -233,6 +247,9 @@ impl Display for CompareTree<'_> {
             "Spent",
             self.totals
                 .iter()
+                .rev()
+                .take(self.options.number_of_columns)
+                .rev()
                 .map(|x| *x.debits())
                 .collect::<Vec<Decimal>>()
                 .as_slice(),
@@ -256,6 +273,9 @@ impl Display for CompareTree<'_> {
                             .borrow()
                             .total()
                 })
+                .rev()
+                .take(self.options.number_of_columns)
+                .rev()
                 .collect::<Vec<Decimal>>()
                 .as_slice(),
         )?;
@@ -267,6 +287,9 @@ impl Display for CompareTree<'_> {
             self.totals
                 .iter()
                 .map(|x| x.total())
+                .rev()
+                .take(self.options.number_of_columns)
+                .rev()
                 .collect::<Vec<Decimal>>()
                 .as_slice(),
         )?;
@@ -287,7 +310,13 @@ impl Display for CompareTree<'_> {
             ),
             width = COLUMN_WIDTH - 2
         )?;
-        for t in self.totals.iter() {
+        for t in self
+            .totals
+            .iter()
+            .rev()
+            .take(self.options.number_of_columns)
+            .rev()
+        {
             write!(
                 f,
                 "{:>width$} %",

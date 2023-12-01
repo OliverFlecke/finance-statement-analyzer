@@ -20,6 +20,8 @@ pub struct CompareArgs {
     ignored_categories: String,
     #[arg(short = 'H', long, default_value = "false")]
     hide_ignored_categories: bool,
+    #[arg(short, long, default_value = "12")]
+    number_of_colunms: usize,
 }
 
 impl CompareArgs {
@@ -36,6 +38,7 @@ impl From<&CompareArgs> for CompareOptions {
         CompareOptions::new(
             value.ignored_categories.as_str().into(),
             value.hide_ignored_categories,
+            value.number_of_colunms,
         )
     }
 }
